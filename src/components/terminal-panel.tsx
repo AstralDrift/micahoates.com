@@ -419,7 +419,7 @@ export function TerminalPanel({ commandRequest }: TerminalPanelProps) {
           autoComplete="off"
           spellCheck={false}
           placeholder="type a command"
-          className="min-w-0 flex-1 bg-transparent text-slate-100 outline-none placeholder:text-slate-600"
+          className="min-w-0 flex-1 bg-transparent text-slate-100 caret-emerald-300 outline-none placeholder:text-slate-600"
         />
         <button
           type="submit"
@@ -428,7 +428,6 @@ export function TerminalPanel({ commandRequest }: TerminalPanelProps) {
         >
           <CornerDownLeft className="size-4" aria-hidden="true" />
         </button>
-        <span className="terminal-caret" aria-hidden="true" />
       </form>
     </section>
   );

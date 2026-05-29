@@ -214,16 +214,6 @@ button:disabled {
   color: transparent;
 }
 
-.terminal-caret {
-  display: inline-block;
-  width: 0.66em;
-  height: 1.05em;
-  translate: 0 0.17em;
-  background: var(--green);
-  box-shadow: 0 0 22px var(--shadow-green);
-  animation: caret-pulse 1s steps(1) infinite;
-}
-
 .color-cyan {
   --accent: var(--cyan);
   --accent-shadow: var(--shadow-cyan);
@@ -245,17 +235,6 @@ button:disabled {
   }
   to {
     transform: translate3d(2%, -1%, 0) rotate(-4deg) scale(1.05);
-  }
-}
-
-@keyframes caret-pulse {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  46%,
-  100% {
-    opacity: 0;
   }
 }
 
