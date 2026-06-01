@@ -251,6 +251,33 @@ button {
   color: rgba(115, 128, 119, 0.72);
 }
 
+.quiet-interface-centered {
+  grid-template-columns: minmax(18rem, 34rem);
+  justify-content: center;
+}
+
+.quiet-terminal-message {
+  min-height: min(68svh, 28rem);
+}
+
+.quiet-terminal-action {
+  border-top: 1px solid rgba(190, 220, 204, 0.12);
+}
+
+.quiet-terminal-link {
+  width: max-content;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  text-decoration: none;
+}
+
+.quiet-terminal-link:hover,
+.quiet-terminal-link:focus-visible {
+  color: var(--green);
+}
+
 .quiet-palette-backdrop {
   position: fixed;
   inset: 0;
