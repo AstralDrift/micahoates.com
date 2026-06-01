@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
-import type { InterfacePhase, TerminalLineTone } from "@/lib/quiet-interface/state";
+import type { InterfacePhase, TerminalLineTone, TerminalSignal, TerminalSignalEvent } from "@/lib/quiet-interface/state";
 
 export type RenderedTerminalLine = {
   id: string;
@@ -18,6 +18,7 @@ type QuietTerminalProps = {
   suggestions: string[];
   onCommand: (command: string) => void;
   onInputActivity: (active: boolean) => void;
+  onTerminalSignal: (signal: Pick<TerminalSignal, "event" | "input" | "submittedCommand">) => void;
   onOpenPalette: () => void;
 };
 
@@ -38,12 +39,18 @@ function toneClass(tone?: TerminalLineTone) {
   }
 }
 
-export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onInputActivity, onOpenPalette }: QuietTerminalProps) {
+export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onInputActivity, onTerminalSignal, onOpenPalette }: QuietTerminalProps) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const updateInput = (nextInput: string, event: TerminalSignalEvent) => {
+    setInput(nextInput);
+    onInputActivity(nextInput.length > 0);
+    onTerminalSignal({ event, input: nextInput });
+  };
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -68,6 +75,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
     setHistoryIndex(null);
     setInput("");
     onInputActivity(false);
+    onTerminalSignal({ event: "submit", input: "", submittedCommand: command });
     onCommand(command);
   };
 
@@ -79,14 +87,14 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
 
     const match = suggestions.find((suggestion) => suggestion.startsWith(nextInput));
     if (match) {
-      setInput(match);
-      onInputActivity(true);
+      updateInput(match, "autocomplete");
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.ctrlKey && event.key.toLowerCase() === "l") {
       event.preventDefault();
+      onTerminalSignal({ event: "clear", input, submittedCommand: "clear" });
       onCommand("clear");
       return;
     }
@@ -111,8 +119,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
 
     if (event.key === "/" && input.length === 0) {
       event.preventDefault();
-      setInput("/");
-      onInputActivity(true);
+      updateInput("/", "input");
       return;
     }
 
@@ -123,8 +130,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
       }
       const nextIndex = historyIndex === null ? history.length - 1 : Math.max(0, historyIndex - 1);
       setHistoryIndex(nextIndex);
-      setInput(history[nextIndex]);
-      onInputActivity(true);
+      updateInput(history[nextIndex], "history");
       return;
     }
 
@@ -136,13 +142,11 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
       const nextIndex = historyIndex + 1;
       if (nextIndex >= history.length) {
         setHistoryIndex(null);
-        setInput("");
-        onInputActivity(false);
+        updateInput("", "history");
         return;
       }
       setHistoryIndex(nextIndex);
-      setInput(history[nextIndex]);
-      onInputActivity(true);
+      updateInput(history[nextIndex], "history");
     }
   };
 
@@ -185,9 +189,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
             data-terminal-input="true"
             value={input}
             onChange={(event) => {
-              const nextValue = event.target.value;
-              setInput(nextValue);
-              onInputActivity(nextValue.length > 0);
+              updateInput(event.target.value, "input");
             }}
             onKeyDown={handleKeyDown}
             autoComplete="off"

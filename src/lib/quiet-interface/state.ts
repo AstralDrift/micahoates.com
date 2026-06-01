@@ -8,10 +8,20 @@ export type VisualEvent =
   | "align"
   | "make-signal"
   | "boundary"
+  | "inspect"
   | "enter"
   | "release"
   | "error"
   | "reset";
+
+export type TerminalSignalEvent = "idle" | "input" | "autocomplete" | "history" | "submit" | "palette" | "clear" | "reset";
+
+export type TerminalSignal = {
+  input: string;
+  submittedCommand?: string;
+  event: TerminalSignalEvent;
+  nonce: number;
+};
 
 export type TerminalLineTone = "default" | "muted" | "accent" | "warning" | "error" | "input";
 

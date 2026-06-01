@@ -8,12 +8,18 @@ import { QuietTerminal, type RenderedTerminalLine } from "@/components/QuietTerm
 import { commandSuggestions, parseCommand, runQuietCommand } from "@/lib/quiet-interface/commands";
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
-import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine } from "@/lib/quiet-interface/state";
+import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
 
 const INITIAL_RENDERED_LINES: RenderedTerminalLine[] = introLines(createInitialState()).map((line, index) => ({
   id: `line-${index + 1}`,
   ...line
 }));
+
+const INITIAL_TERMINAL_SIGNAL: TerminalSignal = {
+  input: "",
+  event: "idle",
+  nonce: 0
+};
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
@@ -25,11 +31,13 @@ function isTypingTarget(target: EventTarget | null) {
 
 export function QuietInterfaceExperience() {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
+  const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
   const [lines, setLines] = useState<RenderedTerminalLine[]>(() => INITIAL_RENDERED_LINES);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [visibleHintKey, setVisibleHintKey] = useState<string | null>(null);
   const [inputActive, setInputActive] = useState(false);
+  const [terminalSignal, setTerminalSignal] = useState<TerminalSignal>(() => INITIAL_TERMINAL_SIGNAL);
   const [pointer, setPointer] = useState({ x: 0, y: 0, active: false });
   const ignoredPointerRef = useRef(false);
 
@@ -54,6 +62,14 @@ export function QuietInterfaceExperience() {
     },
     [makeLine]
   );
+
+  const emitTerminalSignal = useCallback((signal: Omit<TerminalSignal, "nonce">) => {
+    signalCounterRef.current += 1;
+    setTerminalSignal({
+      ...signal,
+      nonce: signalCounterRef.current
+    });
+  }, []);
 
   useEffect(() => {
     window.setTimeout(() => {
@@ -108,17 +124,23 @@ export function QuietInterfaceExperience() {
       const parsed = parseCommand(command);
 
       if (parsed.command === "clear") {
+        emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
         setLines([]);
         return;
       }
 
       const result = runQuietCommand(command, state);
+      const eventState =
+        result.visualEvent && result.nextState.lastVisualEvent !== result.visualEvent
+          ? { ...result.nextState, lastVisualEvent: result.visualEvent }
+          : result.nextState;
       const nextState = {
-        ...result.nextState,
+        ...eventState,
         commandHistory: [...state.commandHistory.slice(-31), command]
       };
 
       if (parsed.command === "reset") {
+        emitTerminalSignal({ event: "reset", input: "", submittedCommand: command });
         clearQuietSession(window.localStorage);
         setState(nextState);
         setRenderedLines([...introLines(nextState), ...result.output]);
@@ -130,7 +152,7 @@ export function QuietInterfaceExperience() {
       setState(nextState);
       appendLines([{ text: `> ${command}`, tone: "input" }, ...result.output]);
     },
-    [appendLines, setRenderedLines, state]
+    [appendLines, emitTerminalSignal, setRenderedLines, state]
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
@@ -171,7 +193,7 @@ export function QuietInterfaceExperience() {
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}
     >
-      <QuietInterfaceCanvas phase={state.phase} signalLevel={state.signalLevel} visualEvent={state.lastVisualEvent} pointer={pointer} />
+      <QuietInterfaceCanvas phase={state.phase} signalLevel={state.signalLevel} visualEvent={state.lastVisualEvent} terminalSignal={terminalSignal} pointer={pointer} />
       <QuietTerminal
         phase={state.phase}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}
@@ -184,6 +206,7 @@ export function QuietInterfaceExperience() {
             setVisibleHintKey(null);
           }
         }}
+        onTerminalSignal={emitTerminalSignal}
         onOpenPalette={() => setPaletteOpen(true)}
       />
       <CommandPalette
@@ -192,6 +215,7 @@ export function QuietInterfaceExperience() {
         onClose={() => setPaletteOpen(false)}
         onRun={(command) => {
           setPaletteOpen(false);
+          emitTerminalSignal({ event: "palette", input: "", submittedCommand: command });
           dispatchCommand(command);
         }}
       />

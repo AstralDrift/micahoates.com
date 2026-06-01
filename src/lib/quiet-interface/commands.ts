@@ -226,14 +226,15 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
 
     case "classify":
       return {
-        nextState: state,
+        nextState: applyEvent(state, "inspect", {}),
         output: output([
           { text: "operator profile:", tone: "accent" },
           `  patience: ${state.commandHistory.length > 4 ? "sufficient" : "unknown"}`,
           `  intent: ${state.hasMadeSignal ? "pattern-seeking" : "unresolved"}`,
           `  signal noise: ${state.signalLevel > 40 ? "low" : "present"}`,
           "  motive: not provided"
-        ])
+        ]),
+        visualEvent: "inspect"
       };
 
     case "align":
@@ -312,12 +313,13 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
 
     case "read":
       return {
-        nextState: state,
+        nextState: applyEvent(state, "inspect", {}),
         output: output([
           "fragment:",
           "  a useful interface does not announce itself",
           "  it waits until the hand knows what to ask"
-        ])
+        ]),
+        visualEvent: "inspect"
       };
 
     case "enter":
