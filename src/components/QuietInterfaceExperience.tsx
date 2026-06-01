@@ -6,25 +6,14 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { QuietInterfaceCanvas } from "@/components/QuietInterfaceCanvas";
 import { QuietTerminal, type RenderedTerminalLine } from "@/components/QuietTerminal";
 import { commandSuggestions, parseCommand, runQuietCommand } from "@/lib/quiet-interface/commands";
-import {
-  createInitialState,
-  createReleasedState,
-  introLines,
-  type QuietInterfaceState,
-  type TerminalLine
-} from "@/lib/quiet-interface/state";
+import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
+import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
+import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine } from "@/lib/quiet-interface/state";
 
-const STORAGE_KEY = "quiet-interface-state";
-const HINT_DELAY_MS = 900;
 const INITIAL_RENDERED_LINES: RenderedTerminalLine[] = introLines(createInitialState()).map((line, index) => ({
   id: `line-${index + 1}`,
   ...line
 }));
-
-type StoredQuietInterfaceState = {
-  hasReleased?: boolean;
-  lastPhase?: QuietInterfaceState["phase"];
-};
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
@@ -32,46 +21,6 @@ function isTypingTarget(target: EventTarget | null) {
   }
 
   return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-}
-
-function contextualHint(state: QuietInterfaceState) {
-  if (!state.hasWoken) {
-    return "try: wake";
-  }
-
-  if (state.phase === "observation") {
-    if (!state.hasListened) {
-      return "next: listen";
-    }
-    if (!state.hasTraced) {
-      return "next: trace";
-    }
-    return "next: make signal";
-  }
-
-  if (state.phase === "assembly") {
-    return "next: make signal";
-  }
-
-  if (state.phase === "boundary") {
-    if (!state.boundaryOpen) {
-      return "next: open boundary";
-    }
-    if (!state.hasEntered) {
-      return "next: enter";
-    }
-    return "next: release";
-  }
-
-  if (state.phase === "inside") {
-    return "next: release";
-  }
-
-  if (state.phase === "outside") {
-    return "try: contact";
-  }
-
-  return undefined;
 }
 
 export function QuietInterfaceExperience() {
@@ -108,24 +57,9 @@ export function QuietInterfaceExperience() {
 
   useEffect(() => {
     window.setTimeout(() => {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        const initialState = createInitialState();
-        setState(initialState);
-        setRenderedLines(introLines(initialState));
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(stored) as StoredQuietInterfaceState;
-        const restoredState = parsed.hasReleased ? createReleasedState() : createInitialState();
-        setState(restoredState);
-        setRenderedLines(introLines(restoredState));
-      } catch {
-        const initialState = createInitialState();
-        setState(initialState);
-        setRenderedLines(introLines(initialState));
-      }
+      const restoredState = restoreQuietSession(window.localStorage);
+      setState(restoredState);
+      setRenderedLines(introLines(restoredState));
     }, 0);
   }, [setRenderedLines]);
 
@@ -185,21 +119,13 @@ export function QuietInterfaceExperience() {
       };
 
       if (parsed.command === "reset") {
-        window.localStorage.removeItem(STORAGE_KEY);
+        clearQuietSession(window.localStorage);
         setState(nextState);
         setRenderedLines([...introLines(nextState), ...result.output]);
         return;
       }
 
-      if (nextState.hasReleased) {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            hasReleased: true,
-            lastPhase: nextState.phase
-          } satisfies StoredQuietInterfaceState)
-        );
-      }
+      persistQuietSession(window.localStorage, nextState);
 
       setState(nextState);
       appendLines([{ text: `> ${command}`, tone: "input" }, ...result.output]);

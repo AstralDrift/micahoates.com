@@ -1,10 +1,6 @@
-# micahoates.com
+# Quiet Interface
 
-Keyboard-first personal site for Micah Oates, built as a quiet interactive system interface rather than a conventional portfolio page.
-
-The site is a static Next.js export hosted on GitHub Pages at:
-
-- https://micahoates.com
+A static, keyboard-first web artifact built as a quiet operating surface rather than a conventional homepage.
 
 ## Local Setup
 
@@ -30,13 +26,9 @@ npm run build
 
 GitHub Actions deploys `main` through `.github/workflows/pages.yml`.
 
-The production domain is configured through GitHub Pages and Namecheap DNS:
+GitHub Pages is the documented hosting target. The generated static artifact includes `public/CNAME` for the configured custom domain.
 
-- Apex A records point to GitHub Pages.
-- `www` points to `AstralDrift.github.io`.
-- `public/CNAME` preserves the custom domain in the static artifact.
-
-## Search And Agent Metadata
+## Artifact Metadata
 
 The static export includes:
 
@@ -46,8 +38,6 @@ The static export includes:
 - `site.webmanifest`
 - SVG favicon and Apple touch icon
 - canonical, Open Graph, Twitter, and JSON-LD metadata
-
-Contact details are intentionally not exposed in metadata or static agent files. They are revealed inside the interface after the release path.
 
 ## Notes
 

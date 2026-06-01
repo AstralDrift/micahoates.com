@@ -1,4 +1,13 @@
-import { COMMAND_DEFINITIONS, HIDDEN_RESPONSES, contactLines, releaseLines } from "@/lib/quiet-interface/copy";
+import { HIDDEN_RESPONSES, contactLines, releaseLines } from "@/lib/quiet-interface/copy";
+import {
+  ASSEMBLY_COMMANDS,
+  BOUNDARY_COMMANDS,
+  OBSERVATION_COMMANDS,
+  OUTSIDE_COMMANDS,
+  availableCommands,
+  commandSuggestions,
+  parseCommand
+} from "@/lib/quiet-interface/command-registry";
 import {
   addDiscoveredCommands,
   createInitialState,
@@ -8,74 +17,7 @@ import {
   type VisualEvent
 } from "@/lib/quiet-interface/state";
 
-type ParsedCommand = {
-  command: string;
-  args: string;
-};
-
-const OBSERVATION_COMMANDS = ["listen", "scan", "trace", "echo", "classify"];
-const ASSEMBLY_COMMANDS = ["align", "make signal", "open boundary", "read"];
-const BOUNDARY_COMMANDS = ["enter", "release", "contain"];
-const OUTSIDE_COMMANDS = ["contact", "whois", "outside"];
-
-const aliasMap = new Map<string, string>();
-
-for (const definition of COMMAND_DEFINITIONS) {
-  aliasMap.set(definition.command, definition.command);
-  for (const alias of definition.aliases ?? []) {
-    aliasMap.set(alias, definition.command);
-  }
-}
-
-function normalizeInput(input: string): string {
-  return input.trim().toLowerCase().replace(/^\/+/, "").replace(/\s+/g, " ");
-}
-
-export function parseCommand(input: string): ParsedCommand {
-  const normalized = normalizeInput(input);
-  const multiWordMatch = ["open boundary", "make signal", "sudo release"].find(
-    (command) => normalized === command || normalized.startsWith(`${command} `)
-  );
-
-  if (multiWordMatch) {
-    return {
-      command: aliasMap.get(multiWordMatch) ?? multiWordMatch,
-      args: normalized.slice(multiWordMatch.length).trim()
-    };
-  }
-
-  const [head = "", ...rest] = normalized.split(" ");
-  return {
-    command: aliasMap.get(head) ?? head,
-    args: rest.join(" ").trim()
-  };
-}
-
-export function availableCommands(state: QuietInterfaceState) {
-  const available = new Set(state.discoveredCommands);
-
-  if (state.phase === "observation" || state.phase === "assembly" || state.phase === "boundary" || state.phase === "inside" || state.phase === "outside") {
-    for (const command of OBSERVATION_COMMANDS) available.add(command);
-  }
-
-  if (state.phase === "assembly" || state.phase === "boundary" || state.phase === "inside" || state.phase === "outside") {
-    for (const command of ASSEMBLY_COMMANDS) available.add(command);
-  }
-
-  if (state.phase === "boundary" || state.phase === "inside" || state.phase === "outside") {
-    for (const command of BOUNDARY_COMMANDS) available.add(command);
-  }
-
-  if (state.phase === "outside") {
-    for (const command of OUTSIDE_COMMANDS) available.add(command);
-  }
-
-  return COMMAND_DEFINITIONS.filter((definition) => available.has(definition.command) && !definition.hidden);
-}
-
-export function commandSuggestions(state: QuietInterfaceState) {
-  return availableCommands(state).map((definition) => definition.command);
-}
+export { availableCommands, commandSuggestions, parseCommand };
 
 function output(lines: Array<string | TerminalLine>): TerminalLine[] {
   return lines.map((line) => (typeof line === "string" ? { text: line } : line));
