@@ -1,4 +1,4 @@
-import { COMMAND_DEFINITIONS, CONTACT_LINES, HIDDEN_RESPONSES, RELEASE_LINES } from "@/lib/quiet-interface/copy";
+import { COMMAND_DEFINITIONS, HIDDEN_RESPONSES, contactLines, releaseLines } from "@/lib/quiet-interface/copy";
 import {
   addDiscoveredCommands,
   createInitialState,
@@ -415,7 +415,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
           signalLevel: 100,
           discoveredCommands: addDiscoveredCommands(state, OUTSIDE_COMMANDS)
         }),
-        output: RELEASE_LINES,
+        output: releaseLines(),
         visualEvent: "release"
       };
 
@@ -431,9 +431,18 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
     case "contact":
     case "whois":
     case "outside":
+      if (!state.hasReleased && state.phase !== "outside") {
+        return {
+          nextState: applyEvent(state, "error", {}),
+          output: output(["outside channel unavailable", "required: release"]),
+          visualEvent: "error",
+          error: true
+        };
+      }
+
       return {
         nextState: state,
-        output: command === "outside" ? output(["outside state:", "  reached", "  quiet"]) : CONTACT_LINES
+        output: command === "outside" ? output(["outside state:", "  reached", "  quiet"]) : contactLines()
       };
 
     case "reset":

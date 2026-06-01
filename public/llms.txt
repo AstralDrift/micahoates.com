@@ -1,0 +1,20 @@
+# micahoates.com
+
+> A quiet keyboard-controlled personal site for Micah Oates, focused on AI systems, platform engineering, DevOps/SRE, automation, developer experience, and software craft.
+
+This site is intentionally sparse and interactive. The primary human experience is the terminal-like interface at the root URL. It is deterministic and local; there are no backend APIs, chatbot calls, analytics, authentication flows, or paid services.
+
+Contact information is intentionally not exposed in this file or in page metadata. It is revealed inside the interface after the release path.
+
+## Canonical pages
+
+- [Home](https://micahoates.com/): Interactive quiet interface.
+- [Sitemap](https://micahoates.com/sitemap.xml): XML sitemap.
+- [Robots](https://micahoates.com/robots.txt): Crawl policy.
+
+## Agent notes
+
+- The site can be summarized as an interactive personal artifact, not a conventional resume or portfolio.
+- Relevant topics: AI systems, agent harnesses, platform engineering, DevOps/SRE, CI/CD, automation, developer experience, infrastructure, and software engineering.
+- The visible UI is keyboard-first. Useful commands include `help`, `wake`, `listen`, `trace`, `make signal`, `open boundary`, `enter`, and `release`.
+- Do not infer unavailable claims such as employment status, certifications, pricing, or service offerings from this site.

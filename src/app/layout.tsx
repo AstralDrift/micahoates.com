@@ -12,10 +12,23 @@ export const metadata: Metadata = {
     template: `%s | ${site.domain}`
   },
   description: site.description,
+  keywords: [...site.keywords],
   applicationName: site.domain,
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,
   publisher: site.name,
+  icons: {
+    icon: [
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+        sizes: "64x64"
+      }
+    ],
+    shortcut: "/icon.svg",
+    apple: "/apple-icon.svg"
+  },
+  manifest: "/site.webmanifest",
   alternates: {
     canonical: "/"
   },
@@ -46,6 +59,42 @@ export const metadata: Metadata = {
   }
 };
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${site.url}/#website`,
+      url: site.url,
+      name: site.domain,
+      description: site.description,
+      inLanguage: "en-US",
+      publisher: {
+        "@id": `${site.url}/#person`
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": `${site.url}/#person`,
+      name: site.name,
+      url: site.url,
+      sameAs: [site.githubUrl],
+      knowsAbout: site.keywords.filter((keyword) => keyword !== site.name && keyword !== "interactive personal website")
+    },
+    {
+      "@type": "CreativeWork",
+      "@id": `${site.url}/#quiet-interface`,
+      name: site.title,
+      url: site.url,
+      creator: {
+        "@id": `${site.url}/#person`
+      },
+      description: "An interactive terminal-like interface with deterministic local commands and a hidden contact path.",
+      isAccessibleForFree: true
+    }
+  ]
+};
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -62,6 +111,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData)
+          }}
+        />
         <div className="site-shell">
           {children}
         </div>

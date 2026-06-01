@@ -1,0 +1,24 @@
+{
+  "name": "System Interface | micahoates.com",
+  "short_name": "micahoates.com",
+  "description": "A quiet keyboard-controlled personal site for Micah Oates.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020302",
+  "theme_color": "#020302",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

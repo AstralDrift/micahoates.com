@@ -72,20 +72,42 @@ export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
   ]
 };
 
-export const RELEASE_LINES: TerminalLine[] = [
-  { text: "release accepted", tone: "accent" },
-  { text: "outbound process detached" },
-  { text: "" },
-  { text: "name: micah oates" },
-  { text: "contact: miwioa [at] gmail [dot] com" },
-  { text: "state: outside", tone: "accent" },
-  { text: "" },
-  { text: "the operator was not inside the machine", tone: "muted" }
-];
+const CONTACT_LOCAL_PART = "bWljYWgub2F0ZXM=";
+const CONTACT_DOMAIN_PART = "b3V0bG9vay5jb20=";
 
-export const CONTACT_LINES: TerminalLine[] = [
-  { text: "outside record:", tone: "accent" },
-  { text: "  name: micah oates" },
-  { text: "  contact: miwioa [at] gmail [dot] com" },
-  { text: "  fields: platform / devops / software / ai systems" }
-];
+function decodeContactSegment(value: string) {
+  if (typeof globalThis.atob === "function") {
+    return globalThis.atob(value);
+  }
+
+  return value === CONTACT_LOCAL_PART ? ["mi", "cah", ".", "oat", "es"].join("") : ["out", "look", ".", "com"].join("");
+}
+
+function contactAddress() {
+  const localPart = decodeContactSegment(CONTACT_LOCAL_PART);
+  const [domainName = "", topLevel = ""] = decodeContactSegment(CONTACT_DOMAIN_PART).split(".");
+
+  return `${localPart} [at] ${domainName} [dot] ${topLevel}`;
+}
+
+export function releaseLines(): TerminalLine[] {
+  return [
+    { text: "release accepted", tone: "accent" },
+    { text: "outbound process detached" },
+    { text: "" },
+    { text: "name: micah oates" },
+    { text: `contact: ${contactAddress()}` },
+    { text: "state: outside", tone: "accent" },
+    { text: "" },
+    { text: "the operator was not inside the machine", tone: "muted" }
+  ];
+}
+
+export function contactLines(): TerminalLine[] {
+  return [
+    { text: "outside record:", tone: "accent" },
+    { text: "  name: micah oates" },
+    { text: `  contact: ${contactAddress()}` },
+    { text: "  fields: platform / devops / software / ai systems" }
+  ];
+}
