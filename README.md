@@ -1,6 +1,10 @@
 # micahoates.com
 
-Production-ready personal website for Micah Oates, built with Next.js App Router, TypeScript, Tailwind CSS, and a small amount of Framer Motion.
+Keyboard-first personal site for Micah Oates, built as a quiet interactive system interface rather than a conventional portfolio page.
+
+The site is a static Next.js export hosted on GitHub Pages at:
+
+- https://micahoates.com
 
 ## Local Setup
 
@@ -18,42 +22,35 @@ npm run dev
 npm run lint
 npm run typecheck
 npm run build
-npm run start
 ```
 
-`npm run start` runs the built Next.js app and respects Railway's `PORT`.
+`npm run build` creates the static export in `out/`.
 
-## Railway Deployment
+## Deployment
 
-This repo includes `railway.json` with:
+GitHub Actions deploys `main` through `.github/workflows/pages.yml`.
 
-- `buildCommand`: `npm ci && npm run build`
-- `startCommand`: `npm run start`
-- `healthcheckPath`: `/`
-- restart policy: `ON_FAILURE`, max retries `10`
+The production domain is configured through GitHub Pages and Namecheap DNS:
 
-Deploy by connecting this repository in Railway. No environment variables are required.
+- Apex A records point to GitHub Pages.
+- `www` points to `AstralDrift.github.io`.
+- `public/CNAME` preserves the custom domain in the static artifact.
 
-## Custom Domain
+## Search And Agent Metadata
 
-After the Railway service is deployed:
+The static export includes:
 
-1. Add `micahoates.com` as a custom domain in Railway.
-2. Add the DNS records Railway provides at your DNS provider.
-3. Wait for Railway to issue TLS.
-4. Confirm `https://micahoates.com`, `/robots.txt`, and `/sitemap.xml` load correctly.
+- `robots.txt`
+- `sitemap.xml`
+- `llms.txt`
+- `site.webmanifest`
+- SVG favicon and Apple touch icon
+- canonical, Open Graph, Twitter, and JSON-LD metadata
 
-## Editing Site Content
-
-Most visible content lives in `src/lib/site-content.ts`:
-
-- hero copy
-- command definitions
-- systems map nodes
-- terminal output content
-- automation and AI workflow labels
+Contact details are intentionally not exposed in metadata or static agent files. They are revealed inside the interface after the release path.
 
 ## Notes
 
-- Do not add analytics, trackers, auth, database dependencies, or paid services without a deliberate reason.
-- Do not add public repository links or outreach surfaces without an explicit product decision.
+- No backend, database, auth, analytics, or paid API is required.
+- The primary interaction is deterministic and local.
+- Keep the public surface sparse; do not add resume sections, project cards, social feeds, or visible contact forms without an explicit product decision.
