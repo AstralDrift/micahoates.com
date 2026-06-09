@@ -44,7 +44,16 @@ function unknown(state: QuietInterfaceState, input: string): CommandResult {
 }
 
 function requireWoken(state: QuietInterfaceState, command: string): CommandResult | null {
-  if (state.hasWoken || command === "wake" || command === "help" || command === "look" || command === "status" || command === "reset") {
+  if (
+    state.hasWoken ||
+    command === "wake" ||
+    command === "help" ||
+    command === "look" ||
+    command === "status" ||
+    command === "reset" ||
+    HIDDEN_RESPONSES[command] ||
+    OUTSIDE_COMMANDS.includes(command)
+  ) {
     return null;
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { CommandPalette } from "@/components/CommandPalette";
 import { QuietInterfaceCanvas } from "@/components/QuietInterfaceCanvas";
@@ -21,6 +22,10 @@ const INITIAL_TERMINAL_SIGNAL: TerminalSignal = {
   nonce: 0
 };
 
+type QuietInterfaceStyle = CSSProperties & {
+  "--keyboard-inset": string;
+};
+
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -37,6 +42,7 @@ export function QuietInterfaceExperience() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [visibleHintKey, setVisibleHintKey] = useState<string | null>(null);
   const [inputActive, setInputActive] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const [terminalSignal, setTerminalSignal] = useState<TerminalSignal>(() => INITIAL_TERMINAL_SIGNAL);
   const [pointer, setPointer] = useState({ x: 0, y: 0, active: false });
   const ignoredPointerRef = useRef(false);
@@ -93,6 +99,27 @@ export function QuietInterfaceExperience() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, []);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      return;
+    }
+
+    const updateKeyboardInset = () => {
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardInset(inset > 48 ? Math.round(inset) : 0);
+    };
+
+    updateKeyboardInset();
+    viewport.addEventListener("resize", updateKeyboardInset);
+    viewport.addEventListener("scroll", updateKeyboardInset);
+
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardInset);
+      viewport.removeEventListener("scroll", updateKeyboardInset);
+    };
   }, []);
 
   const suggestions = useMemo(() => commandSuggestions(state), [state]);
@@ -189,6 +216,7 @@ export function QuietInterfaceExperience() {
   return (
     <main
       className="quiet-interface"
+      style={{ "--keyboard-inset": `${keyboardInset}px` } as QuietInterfaceStyle}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}

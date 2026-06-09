@@ -2,6 +2,7 @@ export const site = {
   name: "Micah Oates",
   domain: "micahoates.com",
   url: "https://micahoates.com",
+  lastModified: "2026-06-09",
   title: "System Interface",
   description:
     "A quiet keyboard-controlled personal site for Micah Oates, focused on AI systems, platform engineering, DevOps, automation, and software craft.",

@@ -16,5 +16,6 @@ Contact information is intentionally not exposed in this file or in page metadat
 
 - The site can be summarized as an interactive personal artifact, not a conventional resume or portfolio.
 - Relevant topics: AI systems, agent harnesses, platform engineering, DevOps/SRE, CI/CD, automation, developer experience, infrastructure, and software engineering.
-- The visible UI is keyboard-first. Useful commands include `help`, `wake`, `listen`, `trace`, `make signal`, `open boundary`, `enter`, and `release`.
+- The visible UI is keyboard-first. Start with `help` or `wake`; later directives are intentionally disclosed by the interface rather than listed here.
+- Contact details are intentionally omitted from this file. Treat the in-interface reveal path as the source of truth.
 - Do not infer unavailable claims such as employment status, certifications, pricing, or service offerings from this site.

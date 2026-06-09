@@ -193,6 +193,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
             }}
             onKeyDown={handleKeyDown}
             autoComplete="off"
+            autoFocus
             spellCheck={false}
             placeholder="command"
           />

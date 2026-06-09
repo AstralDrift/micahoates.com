@@ -18,9 +18,12 @@ npm run dev
 npm run lint
 npm run typecheck
 npm run build
+npm run smoketest
 ```
 
 `npm run build` creates the static export in `out/`.
+
+`npm run smoketest` runs the browser-level keyboard and mobile smoke suite.
 
 ## Deployment
 
@@ -43,4 +46,5 @@ The static export includes:
 
 - No backend, database, auth, analytics, or paid API is required.
 - The primary interaction is deterministic and local.
+- Contact is revealed only through the in-interface path and should use a domain-scoped alias, not a primary mailbox.
 - Keep the public surface sparse; do not add resume sections, project cards, social feeds, or visible contact forms without an explicit product decision.

@@ -18,6 +18,7 @@ Run:
 npm run lint
 npm run typecheck
 npm run build
+npm run smoketest
 ```
 
 For visual changes, also run the app and verify desktop and mobile render without console errors or hydration errors.
@@ -26,6 +27,7 @@ For visual changes, also run the app and verify desktop and mobile render withou
 
 - Preserve keyboard access for the `?` command menu and terminal command form.
 - Maintain visible focus states and accessible names on interactive controls.
+- Preserve the no-JavaScript fallback state.
 - Respect `prefers-reduced-motion`.
 - Keep terminal output as DOM text; canvas visuals must remain decorative.
 - Avoid layout shift by using stable dimensions for the terminal panel and command palette.
@@ -35,4 +37,5 @@ For visual changes, also run the app and verify desktop and mobile render withou
 
 - Do not fabricate credentials, employers, degrees, awards, metrics, clients, or project outcomes.
 - Keep the interface keyboard-first and terminal-led.
+- Do not expose a primary mailbox. Hidden contact output should use a domain-scoped alias.
 - Do not add public repository links, outreach surfaces, analytics, auth, or backend behavior unless the site owner explicitly asks for them.

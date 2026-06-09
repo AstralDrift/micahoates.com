@@ -111,6 +111,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <noscript
+          dangerouslySetInnerHTML={{
+            __html: "<style>.quiet-js-fallback{display:grid!important}.site-shell{display:none!important}</style>"
+          }}
+        />
+        <main className="quiet-noscript quiet-js-fallback" aria-label="Static system interface">
+          <section className="quiet-terminal quiet-terminal-message">
+            <div className="quiet-terminal-chrome" aria-hidden="true">
+              <span>state</span>
+              <strong>limited</strong>
+              <span>!</span>
+            </div>
+            <div className="quiet-terminal-output">
+              <p className="quiet-line-muted">SYSTEM INTERFACE</p>
+              <br />
+              <p className="quiet-line-input">scripting unavailable</p>
+              <p className="quiet-line-default">operator channel requires client-side commands</p>
+              <p className="quiet-line-muted">enable JavaScript to continue</p>
+            </div>
+          </section>
+        </main>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -72,15 +72,15 @@ export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
   ]
 };
 
-const CONTACT_LOCAL_PART = "bWljYWgub2F0ZXM=";
-const CONTACT_DOMAIN_PART = "b3V0bG9vay5jb20=";
+const CONTACT_LOCAL_PART = "aGVsbG8=";
+const CONTACT_DOMAIN_PART = "bWljYWhvYXRlcy5jb20=";
 
 function decodeContactSegment(value: string) {
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
 
-  return value === CONTACT_LOCAL_PART ? ["mi", "cah", ".", "oat", "es"].join("") : ["out", "look", ".", "com"].join("");
+  return value === CONTACT_LOCAL_PART ? ["hel", "lo"].join("") : ["mic", "aho", "ates", ".", "com"].join("");
 }
 
 function contactAddress() {
