@@ -66,7 +66,19 @@ export type CommandResult = {
   error?: boolean;
 };
 
-export const INITIAL_DISCOVERED_COMMANDS = ["help", "wake", "look", "status", "clear", "reset"] as const;
+export const INITIAL_DISCOVERED_COMMANDS = [
+  "help",
+  "pwd",
+  "ls",
+  "find",
+  "file",
+  "cat",
+  "strings",
+  "grep",
+  "systemctl start interface",
+  "clear",
+  "reset"
+] as const;
 
 export function createInitialState(overrides: Partial<QuietInterfaceState> = {}): QuietInterfaceState {
   return {
@@ -115,20 +127,21 @@ export function createReleasedState(): QuietInterfaceState {
     hasReleased: true,
     discoveredCommands: [
       "help",
-      "look",
-      "status",
+      "pwd",
+      "ls",
+      "find",
+      "file",
+      "cat",
+      "strings",
+      "grep",
       "listen",
       "scan",
       "trace",
       "echo",
-      "classify",
-      "align",
+      "printf",
       "make signal",
-      "open boundary",
-      "read",
-      "enter",
-      "release",
-      "contain",
+      "cd",
+      "./release",
       "contact",
       "whois",
       "outside",

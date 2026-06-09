@@ -6,12 +6,12 @@ export type ParsedCommand = {
   args: string;
 };
 
-export const OBSERVATION_COMMANDS = ["listen", "scan", "trace", "echo", "classify"];
-export const ASSEMBLY_COMMANDS = ["align", "make signal", "open boundary", "read"];
-export const BOUNDARY_COMMANDS = ["enter", "release", "contain"];
+export const OBSERVATION_COMMANDS = ["ls", "find", "cat", "file", "strings", "grep", "echo", "printf"];
+export const ASSEMBLY_COMMANDS = ["make signal", "cd"];
+export const BOUNDARY_COMMANDS = ["cd", "./release"];
 export const OUTSIDE_COMMANDS = ["contact", "whois", "outside"];
 
-const MULTI_WORD_COMMANDS = ["open boundary", "make signal", "sudo release"] as const;
+const MULTI_WORD_COMMANDS = ["systemctl start interface", "open boundary", "make signal", "sudo release"] as const;
 const PHASE_ORDER: QuietInterfaceState["phase"][] = ["dormant", "observation", "assembly", "boundary", "inside", "outside"];
 
 const aliasMap = new Map<string, string>();

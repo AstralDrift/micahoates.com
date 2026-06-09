@@ -75,17 +75,17 @@ test("starts as a focused keyboard interface with canvas artifact", async ({ pag
 test("autocomplete, palette, history, clear, and invalid input work", async ({ page }) => {
   const input = commandInput(page);
 
-  await input.fill("wa");
+  await input.fill("sy");
   await input.press("Tab");
-  await expect(input).toHaveValue("wake");
+  await expect(input).toHaveValue("systemctl start interface");
 
   await input.press("?");
   await expect(page.locator(".quiet-palette")).toBeHidden();
-  await input.fill("wake");
+  await input.fill("systemctl start interface");
 
   await input.press("Enter");
   await expect(phaseLabel(page)).toHaveText("observation");
-  await expect(outputText(page)).toContainText("new directive available: listen");
+  await expect(outputText(page)).toContainText("new file available: carrier");
 
   await runCommand(page, "florb");
   await expect(outputText(page)).toContainText("input not recognized");
@@ -103,42 +103,45 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
   await runCommand(page, "reset");
   await input.press("?");
   await expect(page.locator(".quiet-palette")).toBeVisible();
-  await page.locator(".quiet-palette").press("w");
-  await expect(phaseLabel(page)).toHaveText("observation");
+  await page.locator(".quiet-palette").press("l");
+  await expect(outputText(page)).toContainText("README");
 
   await runCommand(page, "clear");
   await expect(outputText(page)).toHaveText("");
 });
 
 test("signal puzzle gates boundary assembly", async ({ page }) => {
-  for (const command of ["wake", "listen", "trace"]) {
+  await runCommand(page, "systemctl start interface");
+
+  for (const command of ["ls", "cat carrier", "cat trace"]) {
     await runCommand(page, command);
   }
 
+  await expect(outputText(page)).toContainText("carrier");
   await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
   await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
 
   await runCommand(page, "make signal");
-  await expect(outputText(page)).toContainText("required: align <token>");
+  await expect(outputText(page)).toContainText("required: echo <token> > signal");
 
   await runCommand(page, "align");
-  await expect(outputText(page)).toContainText("token required");
+  await expect(outputText(page)).toContainText("try: echo <token> > signal");
 
-  await runCommand(page, "align lux");
+  await runCommand(page, "echo lux > signal");
   await expect(outputText(page)).toContainText("alignment rejected");
   await expect(outputText(page)).toContainText("attempts: 1");
 
-  await runCommand(page, "read");
+  await runCommand(page, "cat fragment");
   await expect(outputText(page)).toContainText("follow trace order across carrier sample");
 
-  await runCommand(page, "align lumen");
+  await runCommand(page, "echo lumen > signal");
   await expect(outputText(page)).toContainText("signal decoded");
 
   await runCommand(page, "make signal");
   await expect(phaseLabel(page)).toHaveText("boundary");
   await expect(outputText(page)).toContainText("boundary located");
 
-  for (const command of ["open boundary", "enter", "release"]) {
+  for (const command of ["cd boundary", "cd inside", "./release"]) {
     await runCommand(page, command);
   }
 
@@ -152,7 +155,7 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(outputText(page)).toContainText("outside channel unavailable");
   await expect(outputText(page)).not.toContainText(CONTACT_ALIAS);
 
-  for (const command of ["wake", "listen", "trace", "align lumen", "make signal", "open boundary", "enter", "release"]) {
+  for (const command of ["systemctl start interface", "cat carrier", "cat trace", "echo lumen > signal", "make signal", "cd boundary", "cd inside", "./release"]) {
     await runCommand(page, command);
   }
 
@@ -188,7 +191,7 @@ test("mobile viewport keeps command input reachable", async ({ page, isMobile })
   await expect(commandInput(page)).toBeFocused();
   await expectNoHorizontalOverflow(page);
 
-  for (const command of ["wake", "listen", "trace", "align lumen", "make signal"]) {
+  for (const command of ["systemctl start interface", "cat carrier", "cat trace", "echo lumen > signal", "make signal"]) {
     await runCommand(page, command);
   }
 

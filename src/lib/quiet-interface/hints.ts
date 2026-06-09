@@ -4,41 +4,41 @@ export const HINT_DELAY_MS = 900;
 
 export function contextualHint(state: QuietInterfaceState) {
   if (!state.hasWoken) {
-    return "try: wake";
+    return "try: help";
   }
 
   if (state.phase === "observation") {
     if (!state.hasListened) {
-      return "next: listen";
+      return "next: cat carrier";
     }
     if (!state.hasTraced) {
-      return "next: trace";
+      return "next: cat trace";
     }
     if (!state.hasDecodedSignal) {
-      return "next: align <token>";
+      return "next: echo <token> > signal";
     }
     return "next: make signal";
   }
 
   if (state.phase === "assembly") {
     if (!state.hasDecodedSignal) {
-      return "next: align <token>";
+      return "next: echo <token> > signal";
     }
     return "next: make signal";
   }
 
   if (state.phase === "boundary") {
     if (!state.boundaryOpen) {
-      return "next: open boundary";
+      return "next: cd boundary";
     }
     if (!state.hasEntered) {
-      return "next: enter";
+      return "next: cd inside";
     }
-    return "next: release";
+    return "next: ./release";
   }
 
   if (state.phase === "inside") {
-    return "next: release";
+    return "next: ./release";
   }
 
   return undefined;
