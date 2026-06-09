@@ -90,17 +90,20 @@ function contactAddress() {
   return `${localPart} [at] ${domainName} [dot] ${topLevel}`;
 }
 
-export function releaseLines(): TerminalLine[] {
-  return [
-    { text: "release accepted", tone: "accent" },
-    { text: "outbound process detached" },
-    { text: "" },
+export function releaseLines(perfectRun: boolean): TerminalLine[] {
+  const lines: TerminalLine[] = [
     { text: "name: micah oates" },
     { text: `contact: ${contactAddress()}` },
     { text: "state: outside", tone: "accent" },
     { text: "" },
-    { text: "the operator was not inside the machine", tone: "muted" }
+    { text: "the operator was not inside the machine", tone: "final" }
   ];
+
+  if (perfectRun) {
+    lines.push({ text: "signal integrity: unbroken", tone: "accent" });
+  }
+
+  return lines;
 }
 
 export function contactLines(): TerminalLine[] {

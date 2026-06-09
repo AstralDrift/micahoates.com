@@ -14,10 +14,16 @@ export function contextualHint(state: QuietInterfaceState) {
     if (!state.hasTraced) {
       return "next: trace";
     }
+    if (!state.hasDecodedSignal) {
+      return "next: align <token>";
+    }
     return "next: make signal";
   }
 
   if (state.phase === "assembly") {
+    if (!state.hasDecodedSignal) {
+      return "next: align <token>";
+    }
     return "next: make signal";
   }
 

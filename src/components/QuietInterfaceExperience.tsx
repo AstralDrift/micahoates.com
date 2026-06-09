@@ -221,7 +221,14 @@ export function QuietInterfaceExperience() {
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}
     >
-      <QuietInterfaceCanvas phase={state.phase} signalLevel={state.signalLevel} visualEvent={state.lastVisualEvent} terminalSignal={terminalSignal} pointer={pointer} />
+      <QuietInterfaceCanvas
+        phase={state.phase}
+        signalLevel={state.signalLevel}
+        puzzle={state}
+        visualEvent={state.lastVisualEvent}
+        terminalSignal={terminalSignal}
+        pointer={pointer}
+      />
       <QuietTerminal
         phase={state.phase}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}

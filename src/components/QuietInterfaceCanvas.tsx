@@ -22,11 +22,17 @@ import {
   type ReactionChannels
 } from "@/lib/quiet-interface/canvas-model";
 import { lerp } from "@/lib/quiet-interface/seeded-random";
-import type { InterfacePhase, TerminalSignal, VisualEvent } from "@/lib/quiet-interface/state";
+import type { InterfacePhase, QuietInterfaceState, TerminalSignal, VisualEvent } from "@/lib/quiet-interface/state";
+
+type SignalPuzzleVisualState = Pick<
+  QuietInterfaceState,
+  "signalSlots" | "traceOrder" | "signalToken" | "hasListened" | "hasTraced" | "hasDecodedSignal" | "usedReadHint" | "alignAttempts" | "perfectRunEligible"
+>;
 
 type QuietInterfaceCanvasProps = {
   phase: InterfacePhase;
   signalLevel: number;
+  puzzle: SignalPuzzleVisualState;
   terminalSignal: TerminalSignal;
   visualEvent?: VisualEvent;
   pointer: { x: number; y: number; active: boolean };
@@ -35,6 +41,7 @@ type QuietInterfaceCanvasProps = {
 type RuntimeState = {
   phase: InterfacePhase;
   signalLevel: number;
+  puzzle: SignalPuzzleVisualState;
   terminalSignal: TerminalSignal;
   visualEvent?: VisualEvent;
   pointer: { x: number; y: number; active: boolean };
@@ -43,6 +50,7 @@ type RuntimeState = {
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const SIGNAL_SLOT_ANGLES = [-2.34, -1.18, 0, 1.18, 2.34];
 
 function boost(reactions: ReactionChannels, channel: ReactionChannel, strength: number) {
   reactions[channel] = Math.max(reactions[channel], strength);
@@ -58,11 +66,33 @@ function signalInput(signal: TerminalSignal) {
   return signal.input || signal.submittedCommand || "";
 }
 
-export function QuietInterfaceCanvas({ phase, signalLevel, terminalSignal, visualEvent, pointer }: QuietInterfaceCanvasProps) {
+function alignTokenInput(input: string) {
+  const normalized = input.trim().toLowerCase().replace(/^\/+/, "");
+  return normalized.startsWith("align") ? normalized.slice("align".length).trim() : "";
+}
+
+function tokenPrefixMatch(token: string, target: string) {
+  if (!token) {
+    return 0;
+  }
+
+  let matched = 0;
+  for (let index = 0; index < Math.min(token.length, target.length); index += 1) {
+    if (token[index] !== target[index]) {
+      break;
+    }
+    matched += 1;
+  }
+
+  return matched / target.length;
+}
+
+export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSignal, visualEvent, pointer }: QuietInterfaceCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const runtimeRef = useRef<RuntimeState>({
     phase,
     signalLevel,
+    puzzle,
     terminalSignal,
     visualEvent,
     pointer,
@@ -73,8 +103,9 @@ export function QuietInterfaceCanvas({ phase, signalLevel, terminalSignal, visua
   useEffect(() => {
     runtimeRef.current.phase = phase;
     runtimeRef.current.signalLevel = signalLevel;
+    runtimeRef.current.puzzle = puzzle;
     runtimeRef.current.pointer = pointer;
-  }, [phase, pointer, signalLevel]);
+  }, [phase, pointer, puzzle, signalLevel]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -337,6 +368,120 @@ export function QuietInterfaceCanvas({ phase, signalLevel, terminalSignal, visua
       context.restore();
     };
 
+    const drawSignalSlots = () => {
+      const state = runtimeRef.current;
+      const puzzle = state.puzzle;
+      const palette = paletteForPhase(state.phase);
+      const geometry = apparatusGeometry(width, height, state.phase, state.signalLevel);
+      const input = signalInput(state.terminalSignal);
+      const typedToken = alignTokenInput(input);
+      const typedMatch = tokenPrefixMatch(typedToken, puzzle.signalToken);
+      const matchedSlotNumbers = puzzle.traceOrder.slice(0, Math.ceil(typedMatch * puzzle.signalToken.length));
+      const listen = Math.max(eventAmount("listen"), puzzle.hasListened ? 0.34 : 0);
+      const trace = Math.max(eventAmount("trace"), puzzle.hasTraced ? 0.36 : 0);
+      const decoded = Math.max(eventAmount("align-correct"), puzzle.hasDecodedSignal ? 0.66 : 0);
+      const wrong = Math.max(eventAmount("align-wrong", "error"), state.reactions.error);
+      const hint = Math.max(eventAmount("hint", "inspect"), puzzle.usedReadHint ? 0.16 : 0);
+      const release = Math.max(state.reactions.release, state.phase === "outside" ? 1 : 0);
+
+      if (state.phase === "outside" && release > 0.55) {
+        return;
+      }
+
+      const slotSize = Math.max(8, geometry.cellSize * (width < 720 ? 3.1 : 3.8));
+      const slotRadiusX = geometry.base * (0.94 + decoded * 0.08);
+      const slotRadiusY = geometry.base * (0.62 + decoded * 0.1);
+      const slots = puzzle.signalSlots.map((slot, index) => {
+        const angle = SIGNAL_SLOT_ANGLES[index] ?? 0;
+        const slotNumber = index + 1;
+        const tracePosition = puzzle.traceOrder.indexOf(slotNumber);
+        const locked = puzzle.hasDecodedSignal || matchedSlotNumbers.includes(slotNumber);
+        const shear = wrong > 0.04 ? Math.sin(frame * 0.22 + index * 1.7) * wrong * 12 : 0;
+        const x = geometry.centerX + Math.cos(angle) * slotRadiusX + shear;
+        const y = geometry.centerY + Math.sin(angle) * slotRadiusY * 0.72 + Math.sin(frame * 0.016 + index) * (reducedMotion ? 0 : listen * 2.2);
+
+        return { x, y, slot, slotNumber, tracePosition, locked };
+      });
+
+      context.save();
+      context.lineWidth = 1;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      if (trace > 0.04) {
+        context.strokeStyle = wrong > 0.04 ? palette.warning : decoded > 0.2 ? palette.secondary : palette.low;
+        context.setLineDash([6, 14]);
+        context.lineDashOffset = reducedMotion ? 0 : -frame * (0.18 + decoded * 0.18);
+        context.globalAlpha = Math.min(0.56, 0.1 + trace * 0.32 + decoded * 0.16);
+        for (let index = 0; index < puzzle.traceOrder.length - 1; index += 1) {
+          const from = slots.find((slot) => slot.slotNumber === puzzle.traceOrder[index]);
+          const to = slots.find((slot) => slot.slotNumber === puzzle.traceOrder[index + 1]);
+          if (!from || !to) {
+            continue;
+          }
+          context.beginPath();
+          context.moveTo(from.x, from.y);
+          context.lineTo(to.x, to.y);
+          context.stroke();
+        }
+        context.setLineDash([]);
+      }
+
+      slots.forEach((slot, index) => {
+        const listened = puzzle.hasListened || listen > 0.12;
+        const traced = puzzle.hasTraced || trace > 0.12;
+        const activeTrace = traced && slot.tracePosition >= 0;
+        const labelAlpha = listened ? 0.52 + listen * 0.22 + decoded * 0.12 : 0.12;
+        const slotAlpha = Math.max(0.07, 0.16 + listen * 0.24 + trace * 0.14 + decoded * 0.22 + (slot.locked ? 0.18 : 0) + hint * 0.1 - release * 0.18);
+        const pulse = reducedMotion ? 0 : Math.sin(frame * 0.05 + index * 0.9) * 0.08;
+        const size = slotSize + decoded * 3 + (slot.locked ? 2 : 0) + wrong * (index % 2 === 0 ? 2 : 0);
+
+        context.globalAlpha = Math.min(0.78, slotAlpha + pulse);
+        context.strokeStyle = wrong > 0.05 && !slot.locked ? palette.warning : slot.locked || activeTrace ? palette.secondary : palette.low;
+        context.fillStyle = palette.fill;
+        context.strokeRect(slot.x - size / 2, slot.y - size / 2, size, size);
+
+        context.globalAlpha = Math.min(0.54, slotAlpha * 0.72 + (slot.locked ? 0.18 : 0));
+        context.fillStyle = slot.locked ? palette.secondary : palette.primary;
+        const inner = size * (slot.locked ? 0.32 : 0.18);
+        context.fillRect(slot.x - inner / 2, slot.y - inner / 2, inner, inner);
+
+        if (listened) {
+          context.globalAlpha = Math.min(0.7, labelAlpha);
+          context.fillStyle = slot.locked ? palette.secondary : palette.primary;
+          context.font = `${width < 720 ? 9 : 11}px SFMono-Regular, ui-monospace, monospace`;
+          context.fillText(`${slot.slotNumber}:${slot.slot}`, slot.x, slot.y - size * 0.86);
+        }
+
+        if (activeTrace) {
+          context.globalAlpha = Math.min(0.52, 0.18 + trace * 0.3 + decoded * 0.2);
+          context.fillStyle = palette.secondary;
+          context.font = `${width < 720 ? 8 : 10}px SFMono-Regular, ui-monospace, monospace`;
+          context.fillText(String(slot.tracePosition + 1), slot.x, slot.y + size * 0.9);
+        }
+      });
+
+      if (decoded > 0.2) {
+        context.strokeStyle = palette.secondary;
+        context.globalAlpha = Math.min(0.44, 0.14 + decoded * 0.26);
+        context.setLineDash([2, 8]);
+        context.beginPath();
+        slots.forEach((slot, index) => {
+          const boundaryX = lerp(slot.x, geometry.centerX + (slot.x < geometry.centerX ? -1 : 1) * geometry.base * 0.22, decoded * 0.4);
+          const boundaryY = lerp(slot.y, geometry.centerY + (index - 2) * geometry.cellSize * 2.6, decoded * 0.34);
+          if (index === 0) {
+            context.moveTo(boundaryX, boundaryY);
+          } else {
+            context.lineTo(boundaryX, boundaryY);
+          }
+        });
+        context.stroke();
+        context.setLineDash([]);
+      }
+
+      context.restore();
+    };
+
     const drawCarrierNoise = () => {
       const state = runtimeRef.current;
       const profile = phaseProfile(state.phase);
@@ -486,6 +631,8 @@ export function QuietInterfaceCanvas({ phase, signalLevel, terminalSignal, visua
         context.fillStyle = error > 0.06 && hashMatch > 0.52 ? palette.warning : cell.boundary || cell.core || cell.corridor ? palette.secondary : palette.primary;
         context.fillRect(x - size / 2, y - size / 2, size, size);
       });
+
+      drawSignalSlots();
 
       context.lineWidth = 1;
       context.strokeStyle = boundaryVisible ? palette.secondary : palette.low;

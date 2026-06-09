@@ -106,12 +106,49 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
   await expect(outputText(page)).toHaveText("");
 });
 
+test("signal puzzle gates boundary assembly", async ({ page }) => {
+  for (const command of ["wake", "listen", "trace"]) {
+    await runCommand(page, command);
+  }
+
+  await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
+  await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
+
+  await runCommand(page, "make signal");
+  await expect(outputText(page)).toContainText("required: align <token>");
+
+  await runCommand(page, "align");
+  await expect(outputText(page)).toContainText("token required");
+
+  await runCommand(page, "align lux");
+  await expect(outputText(page)).toContainText("alignment rejected");
+  await expect(outputText(page)).toContainText("attempts: 1");
+
+  await runCommand(page, "read");
+  await expect(outputText(page)).toContainText("follow trace order across carrier sample");
+
+  await runCommand(page, "align lumen");
+  await expect(outputText(page)).toContainText("signal decoded");
+
+  await runCommand(page, "make signal");
+  await expect(phaseLabel(page)).toHaveText("boundary");
+  await expect(outputText(page)).toContainText("boundary located");
+
+  for (const command of ["open boundary", "enter", "release"]) {
+    await runCommand(page, command);
+  }
+
+  await expect(phaseLabel(page)).toHaveText("outside");
+  await expect(outputText(page)).toContainText("the operator was not inside the machine");
+  await expect(outputText(page)).not.toContainText("signal integrity: unbroken");
+});
+
 test("release path gates and then reveals the contact alias", async ({ page }) => {
   await runCommand(page, "contact");
   await expect(outputText(page)).toContainText("outside channel unavailable");
   await expect(outputText(page)).not.toContainText(CONTACT_ALIAS);
 
-  for (const command of ["wake", "listen", "trace", "make signal", "open boundary", "enter", "release"]) {
+  for (const command of ["wake", "listen", "trace", "align lumen", "make signal", "open boundary", "enter", "release"]) {
     await runCommand(page, command);
   }
 
@@ -119,6 +156,7 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(outputText(page)).toContainText("name: micah oates");
   await expect(outputText(page)).toContainText(`contact: ${CONTACT_ALIAS}`);
   await expect(outputText(page)).toContainText("the operator was not inside the machine");
+  await expect(outputText(page)).toContainText("signal integrity: unbroken");
 
   await page.reload();
   await expect(outputText(page)).toContainText("operator recognized");
@@ -142,7 +180,7 @@ test("mobile viewport keeps command input reachable", async ({ page, isMobile })
   await expect(commandInput(page)).toBeFocused();
   await expectNoHorizontalOverflow(page);
 
-  for (const command of ["wake", "listen", "trace", "make signal"]) {
+  for (const command of ["wake", "listen", "trace", "align lumen", "make signal"]) {
     await runCommand(page, command);
   }
 

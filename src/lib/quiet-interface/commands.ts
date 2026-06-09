@@ -79,6 +79,14 @@ function help(state: QuietInterfaceState): CommandResult {
   };
 }
 
+function carrierSample(state: QuietInterfaceState) {
+  return state.signalSlots.map((slot, index) => `${index + 1}:${slot}`).join("  ");
+}
+
+function traceOrder(state: QuietInterfaceState) {
+  return state.traceOrder.join(" -> ");
+}
+
 export function runQuietCommand(input: string, state: QuietInterfaceState): CommandResult {
   const parsed = parseCommand(input);
   const command = parsed.command;
@@ -152,6 +160,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
           `  phase: ${state.phase}`,
           `  signal: ${state.signalLevel}%`,
           `  carrier: ${state.hasListened ? "detected" : "silent"}`,
+          `  alignment: ${state.hasDecodedSignal ? "decoded" : "unresolved"}`,
           `  boundary: ${state.boundaryOpen ? "open" : state.boundaryVisible ? "located" : "not visible"}`
         ])
       };
@@ -171,6 +180,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         },
         output: output([
           "carrier detected",
+          `sample: ${carrierSample(state)}`,
           "pattern incomplete",
           "background process declined to identify itself",
           "",
@@ -211,10 +221,11 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         },
         output: output([
           "trace complete",
+          `route: ${traceOrder(state)}`,
           "signal path found behind visible surface",
           "coherence increased",
           "",
-          { text: `new directive available: ${readyForAssembly ? "make signal" : "listen"}`, tone: "accent" }
+          { text: `new directive available: ${readyForAssembly ? "align" : "listen"}`, tone: "accent" }
         ]),
         visualEvent: "trace"
       };
@@ -249,27 +260,63 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
     case "align":
       if (!state.hasListened || !state.hasTraced) {
         return {
-          nextState: applyEvent(state, "error", {}),
+          nextState: applyEvent(state, "error", {
+            perfectRunEligible: false
+          }),
           output: output(["alignment failed", "required: listen + trace"]),
           visualEvent: "error",
           error: true
         };
       }
 
+      if (!parsed.args) {
+        return {
+          nextState: applyEvent(state, "align-wrong", {
+            perfectRunEligible: false
+          }),
+          output: output(["token required", "try: align <token>"]),
+          visualEvent: "align-wrong",
+          error: true
+        };
+      }
+
+      if (parsed.args !== state.signalToken) {
+        return {
+          nextState: applyEvent(state, "align-wrong", {
+            alignAttempts: state.alignAttempts + 1,
+            perfectRunEligible: false
+          }),
+          output: output([
+            { text: "alignment rejected", tone: "warning" },
+            `attempts: ${state.alignAttempts + 1}`
+          ]),
+          visualEvent: "align-wrong",
+          error: true
+        };
+      }
+
       return {
-        nextState: applyEvent(state, "align", {
+        nextState: applyEvent(state, "align-correct", {
           hasAligned: true,
-          signalLevel: Math.max(state.signalLevel, 58)
+          hasDecodedSignal: true,
+          alignAttempts: state.alignAttempts + 1,
+          signalLevel: Math.max(state.signalLevel, 58),
+          perfectRunEligible: state.perfectRunEligible && state.alignAttempts === 0 && !state.usedReadHint
         }),
-        output: output(["visible fragments aligned", "surface response stabilized"]),
-        visualEvent: "align"
+        output: output([
+          "signal decoded",
+          "visible fragments aligned",
+          "",
+          { text: "new directive available: make signal", tone: "accent" }
+        ]),
+        visualEvent: "align-correct"
       };
 
     case "make signal":
-      if (!state.hasListened || !state.hasTraced) {
+      if (!state.hasListened || !state.hasTraced || !state.hasDecodedSignal) {
         return {
           nextState: applyEvent(state, "error", {}),
-          output: output(["carrier fragments incomplete", "required: listen + trace"]),
+          output: output(["carrier fragments incomplete", "required: align <token>"]),
           visualEvent: "error",
           error: true
         };
@@ -321,6 +368,20 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
       };
 
     case "read":
+      if (state.hasListened && state.hasTraced && !state.hasDecodedSignal) {
+        return {
+          nextState: applyEvent(state, "hint", {
+            usedReadHint: true,
+            perfectRunEligible: false
+          }),
+          output: output([
+            "fragment:",
+            "  follow trace order across carrier sample"
+          ]),
+          visualEvent: "hint"
+        };
+      }
+
       return {
         nextState: applyEvent(state, "inspect", {}),
         output: output([
@@ -368,7 +429,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
           signalLevel: 100,
           discoveredCommands: addDiscoveredCommands(state, OUTSIDE_COMMANDS)
         }),
-        output: releaseLines(),
+        output: releaseLines(state.perfectRunEligible),
         visualEvent: "release"
       };
 

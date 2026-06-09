@@ -32,6 +32,8 @@ function toneClass(tone?: TerminalLineTone) {
       return "quiet-line-error";
     case "input":
       return "quiet-line-input";
+    case "final":
+      return "quiet-line-final";
     case "muted":
       return "quiet-line-muted";
     default:
@@ -151,7 +153,7 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
   };
 
   return (
-    <section className="quiet-terminal" aria-label="Quiet system interface" onClick={() => inputRef.current?.focus()}>
+    <section className={`quiet-terminal quiet-terminal-${phase}`} aria-label="Quiet system interface" onClick={() => inputRef.current?.focus()}>
       <div className="quiet-terminal-chrome" aria-hidden="true">
         <span>state</span>
         <strong>{phase}</strong>

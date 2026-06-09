@@ -193,10 +193,14 @@ export function paletteForPhase(phase: InterfacePhase) {
 
 export function commandReactionProfile(event: VisualEvent): { channel: ReactionChannel; strength: number } {
   switch (event) {
+    case "align-wrong":
     case "error":
       return { channel: "error", strength: 1 };
+    case "align-correct":
+      return { channel: "phase", strength: 1 };
     case "release":
       return { channel: "release", strength: 1 };
+    case "hint":
     case "scan":
     case "inspect":
       return { channel: "inspect", strength: 1 };

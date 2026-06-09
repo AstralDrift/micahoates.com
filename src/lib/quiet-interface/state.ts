@@ -6,8 +6,11 @@ export type VisualEvent =
   | "scan"
   | "trace"
   | "align"
+  | "align-correct"
+  | "align-wrong"
   | "make-signal"
   | "boundary"
+  | "hint"
   | "inspect"
   | "enter"
   | "release"
@@ -23,7 +26,7 @@ export type TerminalSignal = {
   nonce: number;
 };
 
-export type TerminalLineTone = "default" | "muted" | "accent" | "warning" | "error" | "input";
+export type TerminalLineTone = "default" | "muted" | "accent" | "warning" | "error" | "input" | "final";
 
 export type TerminalLine = {
   text: string;
@@ -38,6 +41,13 @@ export type QuietInterfaceState = {
   hasTraced: boolean;
   hasScanned: boolean;
   hasAligned: boolean;
+  signalToken: string;
+  signalSlots: string[];
+  traceOrder: number[];
+  hasDecodedSignal: boolean;
+  alignAttempts: number;
+  usedReadHint: boolean;
+  perfectRunEligible: boolean;
   hasMadeSignal: boolean;
   boundaryVisible: boolean;
   boundaryOpen: boolean;
@@ -67,6 +77,13 @@ export function createInitialState(overrides: Partial<QuietInterfaceState> = {})
     hasTraced: false,
     hasScanned: false,
     hasAligned: false,
+    signalToken: "lumen",
+    signalSlots: ["N", "M", "L", "E", "U"],
+    traceOrder: [3, 5, 2, 4, 1],
+    hasDecodedSignal: false,
+    alignAttempts: 0,
+    usedReadHint: false,
+    perfectRunEligible: true,
     hasMadeSignal: false,
     boundaryVisible: false,
     boundaryOpen: false,
@@ -88,6 +105,9 @@ export function createReleasedState(): QuietInterfaceState {
     hasTraced: true,
     hasScanned: true,
     hasAligned: true,
+    hasDecodedSignal: true,
+    alignAttempts: 1,
+    perfectRunEligible: false,
     hasMadeSignal: true,
     boundaryVisible: true,
     boundaryOpen: true,
