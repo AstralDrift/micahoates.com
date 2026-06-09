@@ -41,9 +41,5 @@ export function contextualHint(state: QuietInterfaceState) {
     return "next: release";
   }
 
-  if (state.phase === "outside") {
-    return "try: contact";
-  }
-
   return undefined;
 }

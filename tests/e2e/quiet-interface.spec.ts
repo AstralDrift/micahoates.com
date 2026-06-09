@@ -18,6 +18,10 @@ function phaseLabel(page: Page) {
   return app(page).locator(".quiet-terminal-chrome strong");
 }
 
+function commandHint(page: Page) {
+  return app(page).locator(".quiet-terminal-hint");
+}
+
 async function waitForTerminalReady(page: Page) {
   await expect(commandInput(page)).toBeVisible();
   await expect
@@ -157,9 +161,13 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(outputText(page)).toContainText(`contact: ${CONTACT_ALIAS}`);
   await expect(outputText(page)).toContainText("the operator was not inside the machine");
   await expect(outputText(page)).toContainText("signal integrity: unbroken");
+  await page.waitForTimeout(1000);
+  await expect(commandHint(page)).toHaveText("");
 
   await page.reload();
   await expect(outputText(page)).toContainText("operator recognized");
+  await page.waitForTimeout(1000);
+  await expect(commandHint(page)).toHaveText("");
 
   await runCommand(page, "whoami");
   await expect(outputText(page)).toContainText("operator identity:");
