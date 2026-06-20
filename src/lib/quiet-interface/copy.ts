@@ -8,12 +8,14 @@ export type CommandDefinition = {
 };
 
 export const COMMAND_DEFINITIONS: CommandDefinition[] = [
-  { command: "help", description: "show available commands", aliases: ["?", "man"] },
+  { command: "help", description: "show available commands", aliases: ["?"] },
+  { command: "man", description: "show command notes" },
   { command: "pwd", description: "print current path" },
   { command: "ls", description: "list visible files", aliases: ["dir"] },
+  { command: "tree", description: "print filesystem shape" },
   { command: "find", description: "walk visible files" },
   { command: "file", description: "identify a path" },
-  { command: "cat", description: "print file contents" },
+  { command: "cat", description: "print file contents", aliases: ["less", "more"] },
   { command: "strings", description: "extract readable signal data" },
   { command: "grep", description: "search visible files" },
   { command: "systemctl start interface", description: "resume interface service", aliases: ["wake"] },
@@ -25,6 +27,7 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   { command: "contact", description: "print outside contact" },
   { command: "whois", description: "query outside record" },
   { command: "outside", description: "print outside state" },
+  { command: "history", description: "print command history" },
   { command: "clear", description: "clear visible output" },
   { command: "reset", description: "restart the interface" },
   { command: "look", description: "legacy surface inspection", hidden: true },

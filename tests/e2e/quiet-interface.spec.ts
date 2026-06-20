@@ -22,6 +22,10 @@ function commandHint(page: Page) {
   return app(page).locator(".quiet-terminal-hint");
 }
 
+function promptText(page: Page) {
+  return app(page).locator(".quiet-terminal-prompt");
+}
+
 async function waitForTerminalReady(page: Page) {
   await expect(commandInput(page)).toBeVisible();
   await expect
@@ -66,6 +70,7 @@ test("starts as a focused keyboard interface with canvas artifact", async ({ pag
   await expect(phaseLabel(page)).toHaveText("dormant");
   await expect(commandInput(page)).toBeFocused();
   await expect(commandInput(page)).toHaveAttribute("placeholder", "command");
+  await expect(promptText(page)).toHaveText("operator:/$");
   await expect(page.locator("canvas.quiet-canvas")).toBeVisible();
   await expect(outputText(page)).toContainText("SYSTEM INTERFACE");
   await expect(outputText(page)).toContainText("operator input required");
@@ -86,6 +91,7 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
   await input.press("Enter");
   await expect(phaseLabel(page)).toHaveText("observation");
   await expect(outputText(page)).toContainText("new file available: carrier");
+  await expect(promptText(page)).toHaveText("operator:/surface$");
 
   await runCommand(page, "florb");
   await expect(outputText(page)).toContainText("input not recognized");
@@ -108,6 +114,37 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
 
   await runCommand(page, "clear");
   await expect(outputText(page)).toHaveText("");
+});
+
+test("shell affordances support filesystem-style discovery", async ({ page }) => {
+  const input = commandInput(page);
+
+  await runCommand(page, "systemctl start interface");
+
+  await runCommand(page, "ls -la");
+  await expect(outputText(page)).toContainText("-r--r--r--");
+  await expect(outputText(page)).toContainText("carrier.sample");
+
+  await runCommand(page, "tree");
+  await expect(outputText(page)).toContainText("|-- carrier.sample");
+  await expect(outputText(page)).toContainText("`-- operator.log");
+
+  await runCommand(page, "file carrier.sample");
+  await expect(outputText(page)).toContainText("scrambled five-slot signal");
+
+  await runCommand(page, "man cat");
+  await expect(outputText(page)).toContainText("MAN cat");
+  await expect(outputText(page)).toContainText("read virtual files");
+
+  await input.fill("cat ca");
+  await input.press("Tab");
+  await expect(input).toHaveValue("cat carrier");
+  await input.press("Enter");
+  await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
+
+  await runCommand(page, "history");
+  await expect(outputText(page)).toContainText("systemctl start interface");
+  await expect(outputText(page)).toContainText("cat carrier");
 });
 
 test("signal puzzle gates boundary assembly", async ({ page }) => {

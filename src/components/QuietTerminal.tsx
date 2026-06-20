@@ -13,9 +13,11 @@ export type RenderedTerminalLine = {
 
 type QuietTerminalProps = {
   phase: InterfacePhase;
+  prompt: string;
   hint?: string;
   lines: RenderedTerminalLine[];
   suggestions: string[];
+  pathSuggestions: string[];
   onCommand: (command: string) => void;
   onInputActivity: (active: boolean) => void;
   onTerminalSignal: (signal: Pick<TerminalSignal, "event" | "input" | "submittedCommand">) => void;
@@ -41,7 +43,37 @@ function toneClass(tone?: TerminalLineTone) {
   }
 }
 
-export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onInputActivity, onTerminalSignal, onOpenPalette }: QuietTerminalProps) {
+function completeLastToken(input: string, candidates: string[]) {
+  const tokenMatch = input.match(/(^|\s)([^\s]*)$/);
+  const token = tokenMatch?.[2] ?? "";
+  const prefix = token.startsWith("./") ? "./" : "";
+  const normalizedToken = token.replace(/^\.\//, "").toLowerCase();
+  const match = candidates.find((candidate) => candidate.toLowerCase().startsWith(normalizedToken));
+
+  if (!match) {
+    return input;
+  }
+
+  return `${input.slice(0, input.length - token.length)}${prefix}${match}`;
+}
+
+function shouldCompletePath(input: string) {
+  const normalized = input.trimStart().toLowerCase();
+  return /^(cat|less|more|file|strings|cd)\s+/.test(normalized) || /^grep\s+\S+\s+/.test(normalized) || />\s*\S*$/.test(normalized);
+}
+
+export function QuietTerminal({
+  phase,
+  prompt,
+  hint,
+  lines,
+  suggestions,
+  pathSuggestions,
+  onCommand,
+  onInputActivity,
+  onTerminalSignal,
+  onOpenPalette
+}: QuietTerminalProps) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
@@ -84,6 +116,14 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
   const autocomplete = () => {
     const nextInput = input.trim().toLowerCase().replace(/^\/+/, "");
     if (!nextInput) {
+      return;
+    }
+
+    if (shouldCompletePath(nextInput)) {
+      const completedPathInput = completeLastToken(nextInput, pathSuggestions);
+      if (completedPathInput !== nextInput) {
+        updateInput(completedPathInput, "autocomplete");
+      }
       return;
     }
 
@@ -184,7 +224,9 @@ export function QuietTerminal({ phase, hint, lines, suggestions, onCommand, onIn
           <label htmlFor="quiet-command-input" className="sr-only">
             Terminal command
           </label>
-          <span aria-hidden="true">&gt;</span>
+          <span className="quiet-terminal-prompt" aria-hidden="true">
+            {prompt}
+          </span>
           <input
             ref={inputRef}
             id="quiet-command-input"

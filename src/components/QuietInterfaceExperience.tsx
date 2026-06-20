@@ -6,7 +6,7 @@ import type { CSSProperties } from "react";
 import { CommandPalette } from "@/components/CommandPalette";
 import { QuietInterfaceCanvas } from "@/components/QuietInterfaceCanvas";
 import { QuietTerminal, type RenderedTerminalLine } from "@/components/QuietTerminal";
-import { commandSuggestions, parseCommand, runQuietCommand } from "@/lib/quiet-interface/commands";
+import { commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, shellPrompt } from "@/lib/quiet-interface/commands";
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
 import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
@@ -123,6 +123,8 @@ export function QuietInterfaceExperience() {
   }, []);
 
   const suggestions = useMemo(() => commandSuggestions(state), [state]);
+  const paths = useMemo(() => pathSuggestions(state), [state]);
+  const prompt = useMemo(() => shellPrompt(state), [state]);
   const hint = useMemo(() => contextualHint(state), [state]);
   const hintKey = `${state.phase}:${state.signalLevel}:${state.commandHistory.length}:${hint ?? ""}`;
 
@@ -231,9 +233,11 @@ export function QuietInterfaceExperience() {
       />
       <QuietTerminal
         phase={state.phase}
+        prompt={prompt}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}
         lines={lines}
         suggestions={suggestions}
+        pathSuggestions={paths}
         onCommand={dispatchCommand}
         onInputActivity={(active) => {
           setInputActive(active);

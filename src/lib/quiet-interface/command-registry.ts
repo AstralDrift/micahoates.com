@@ -6,7 +6,7 @@ export type ParsedCommand = {
   args: string;
 };
 
-export const OBSERVATION_COMMANDS = ["ls", "find", "cat", "file", "strings", "grep", "echo", "printf"];
+export const OBSERVATION_COMMANDS = ["ls", "tree", "find", "cat", "file", "strings", "grep", "echo", "printf", "history", "man"];
 export const ASSEMBLY_COMMANDS = ["make signal", "cd"];
 export const BOUNDARY_COMMANDS = ["cd", "./release"];
 export const OUTSIDE_COMMANDS = ["contact", "whois", "outside"];

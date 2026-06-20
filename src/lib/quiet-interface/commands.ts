@@ -46,8 +46,10 @@ function unknown(state: QuietInterfaceState, input: string): CommandResult {
 function requireWoken(state: QuietInterfaceState, command: string): CommandResult | null {
   const dormantReadableCommands = new Set([
     "help",
+    "man",
     "pwd",
     "ls",
+    "tree",
     "find",
     "file",
     "cat",
@@ -108,14 +110,14 @@ function normalizePath(path: string) {
     .replace(/^mnt\/surface\//, "");
 }
 
-function currentPath(state: QuietInterfaceState) {
+export function currentPath(state: QuietInterfaceState) {
   if (state.phase === "outside") return "/outside";
   if (state.phase === "inside") return "/surface/boundary/inside";
   if (state.phase === "boundary") return "/surface/boundary";
   return state.hasWoken ? "/surface" : "/";
 }
 
-function visibleFiles(state: QuietInterfaceState) {
+export function visibleFiles(state: QuietInterfaceState) {
   const files = new Set([".", "README", "status"]);
 
   if (state.hasWoken) {
@@ -149,6 +151,99 @@ function visibleFiles(state: QuietInterfaceState) {
   }
 
   return Array.from(files);
+}
+
+export function shellPrompt(state: QuietInterfaceState) {
+  return `operator:${currentPath(state)}$`;
+}
+
+export function pathSuggestions(state: QuietInterfaceState) {
+  return visibleFiles(state)
+    .map((file) => file.replace(/[*]$/, ""))
+    .flatMap((file) => (file.endsWith("/") ? [file, file.slice(0, -1)] : [file]));
+}
+
+function fileRows(state: QuietInterfaceState) {
+  return visibleFiles(state).map((name) => {
+    const directory = name.endsWith("/");
+    const executable = name.endsWith("*");
+    const plainName = name.replace(/[*]$/, "");
+    return {
+      name,
+      mode: directory ? "dr-xr-xr-x" : executable ? "-r-xr-xr-x" : "-r--r--r--",
+      size: directory ? 96 : plainName === "carrier.sample" || plainName === "trace.path" ? 64 : plainName === "signal" ? 5 : 32
+    };
+  });
+}
+
+function listLines(state: QuietInterfaceState, args: string) {
+  const long = /\B-l|(^|\s)-[a-z]*l[a-z]*(\s|$)/.test(args);
+  const all = /\B-a|(^|\s)-[a-z]*a[a-z]*(\s|$)/.test(args);
+  const rows = fileRows(state).filter((row) => all || !row.name.startsWith("."));
+
+  if (!long) {
+    return output(rows.map((row) => row.name));
+  }
+
+  return output([
+    `total ${rows.length}`,
+    ...rows.map((row) => `${row.mode} 1 operator surface ${String(row.size).padStart(5, " ")} Jun 20 00:00 ${row.name}`)
+  ]);
+}
+
+function treeLines(state: QuietInterfaceState) {
+  const lines = ["."];
+
+  const rootFiles = ["README", "status"];
+  if (state.hasWoken) {
+    rootFiles.push("carrier.sample", "trace.path", "operator.log");
+  }
+  if (state.hasListened && state.hasTraced) {
+    rootFiles.push("fragment", "signal");
+  }
+
+  rootFiles.forEach((file, index) => {
+    const last = index === rootFiles.length - 1 && !state.boundaryVisible && !state.hasReleased;
+    lines.push(`${last ? "`" : "|"}-- ${file}`);
+  });
+
+  if (state.boundaryVisible) {
+    lines.push(`${state.hasReleased ? "|" : "`"}-- boundary/`);
+    lines.push(`    ${state.boundaryOpen ? "|-- inside/" : "`-- closed"}`);
+    if (state.hasEntered) {
+      lines.push("    `-- inside/release*");
+    }
+  }
+
+  if (state.hasReleased) {
+    lines.push("`-- outside/");
+    lines.push("    |-- contact");
+    lines.push("    `-- record");
+  }
+
+  return output(lines);
+}
+
+function manLines(topic: string) {
+  const command = topic.trim() || "help";
+  const notes: Record<string, string[]> = {
+    help: ["help", "  list commands currently visible to this phase"],
+    ls: ["ls [-la]", "  list files exposed by the current surface"],
+    tree: ["tree", "  print the recovered filesystem shape"],
+    find: ["find [path]", "  walk visible files; options are tolerated, not required"],
+    file: ["file <path>", "  identify a file before reading it"],
+    cat: ["cat <path>", "  read virtual files; carrier and trace mutate the apparatus"],
+    strings: ["strings carrier.sample", "  extract readable carrier bytes"],
+    grep: ["grep <pattern> <file>", "  search carrier, trace, status, or fragment"],
+    echo: ["echo <token> > signal", "  write a decoded token into the signal sink"],
+    printf: ["printf <token> > signal", "  write a decoded token without echo text"],
+    make: ["make signal", "  assemble the boundary after signal is decoded"],
+    cd: ["cd boundary", "cd inside", "  move through located surfaces"],
+    "./release": ["./release", "  execute the outside transition from inside"]
+  };
+
+  const lines = notes[command] ?? notes[command.split(" ")[0] ?? ""] ?? [`${command}: no manual entry`];
+  return output([{ text: `MAN ${command}`, tone: "accent" }, ...lines]);
 }
 
 function statusLines(state: QuietInterfaceState) {
@@ -242,6 +337,12 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
     case "help":
       return help(state);
 
+    case "man":
+      return {
+        nextState: state,
+        output: manLines(parsed.args)
+      };
+
     case "pwd":
       return {
         nextState: state,
@@ -258,7 +359,22 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
 
       return {
         nextState,
-        output: output(visibleFiles(nextState)),
+        output: listLines(nextState, parsed.args),
+        visualEvent: state.hasWoken ? "scan" : undefined
+      };
+    }
+
+    case "tree": {
+      const nextState = state.hasWoken
+        ? applyEvent(state, "scan", {
+            hasScanned: true,
+            signalLevel: Math.max(state.signalLevel, 30)
+          })
+        : state;
+
+      return {
+        nextState,
+        output: treeLines(nextState),
         visualEvent: state.hasWoken ? "scan" : undefined
       };
     }
@@ -307,6 +423,27 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         return {
           nextState: state,
           output: statusLines(state)
+        };
+      }
+
+      if (path === "operator.log") {
+        return {
+          nextState: state,
+          output: output([
+            "operator.log:",
+            "  input: keyboard",
+            `  cwd: ${currentPath(state)}`,
+            `  carrier: ${state.hasListened ? "sampled" : "unread"}`,
+            `  trace: ${state.hasTraced ? "read" : "unread"}`,
+            `  signal: ${state.hasDecodedSignal ? "locked" : "empty"}`
+          ])
+        };
+      }
+
+      if (path === "signal") {
+        return {
+          nextState: state,
+          output: state.hasDecodedSignal ? output([state.signalToken]) : output(["cat: signal: input/output error"])
         };
       }
 
@@ -405,6 +542,8 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         if (path === "carrier" || path === "carrier.sample") return `sample: ${carrierSample(state)}`;
         if (path === "trace" || path === "trace.path") return `route: ${traceOrder(state)}`;
         if (path === "status") return statusLines(state).map((line) => line.text).join("\n");
+        if (path === "operator.log") return `cwd: ${currentPath(state)}\ncarrier: ${state.hasListened ? "sampled" : "unread"}\ntrace: ${state.hasTraced ? "read" : "unread"}`;
+        if (path === "signal" && state.hasDecodedSignal) return state.signalToken;
         if (path === "fragment" && state.hasListened && state.hasTraced) return "follow trace order across carrier sample";
         return "";
       })();
@@ -454,27 +593,13 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
     case "look":
       return {
         nextState: state,
-        output: output([
-          state.hasEntered ? "you are inside a reduced surface" : "you are viewing a quiet interface",
-          "no windows",
-          "no pointer path",
-          "no declared purpose",
-          "",
-          state.hasWoken ? "the system is listening for commands" : "the surface is dormant"
-        ])
+        output: lookLines(state)
       };
 
     case "status":
       return {
         nextState: state,
-        output: output([
-          { text: "system state:", tone: "accent" },
-          `  phase: ${state.phase}`,
-          `  signal: ${state.signalLevel}%`,
-          `  carrier: ${state.hasListened ? "detected" : "silent"}`,
-          `  alignment: ${state.hasDecodedSignal ? "decoded" : "unresolved"}`,
-          `  boundary: ${state.boundaryOpen ? "open" : state.boundaryVisible ? "located" : "not visible"}`
-        ])
+        output: statusLines(state)
       };
 
     case "listen": {
@@ -802,6 +927,15 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         }),
         output: output(["containment accepted", "nothing moved"]),
         visualEvent: "boundary"
+      };
+
+    case "history":
+      return {
+        nextState: state,
+        output:
+          state.commandHistory.length > 0
+            ? output(state.commandHistory.map((historyCommand, index) => `${String(index + 1).padStart(4, " ")}  ${historyCommand}`))
+            : output(["history: empty"])
       };
 
     case "contact":

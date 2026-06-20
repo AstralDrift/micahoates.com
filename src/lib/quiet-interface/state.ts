@@ -68,8 +68,10 @@ export type CommandResult = {
 
 export const INITIAL_DISCOVERED_COMMANDS = [
   "help",
+  "man",
   "pwd",
   "ls",
+  "tree",
   "find",
   "file",
   "cat",
@@ -127,8 +129,10 @@ export function createReleasedState(): QuietInterfaceState {
     hasReleased: true,
     discoveredCommands: [
       "help",
+      "man",
       "pwd",
       "ls",
+      "tree",
       "find",
       "file",
       "cat",
@@ -145,6 +149,7 @@ export function createReleasedState(): QuietInterfaceState {
       "contact",
       "whois",
       "outside",
+      "history",
       "clear",
       "reset"
     ],
