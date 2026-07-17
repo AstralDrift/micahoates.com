@@ -18,6 +18,7 @@ function isTypingTarget(target: EventTarget | null) {
 
 export function HomeExperience() {
   const [mode, setMode] = useState<HomeMode>("brand");
+  const [ready, setReady] = useState(false);
 
   const enterInterface = useCallback(() => {
     setMode("interface");
@@ -25,6 +26,11 @@ export function HomeExperience() {
 
   const exitInterface = useCallback(() => {
     setMode("brand");
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setReady(true));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -55,7 +61,7 @@ export function HomeExperience() {
   }, [mode]);
 
   return (
-    <div className="home-experience" data-mode={mode}>
+    <div className="home-experience" data-mode={mode} data-ready={ready ? "true" : "false"}>
       <div className="home-brand-layer" data-active={mode === "brand" ? "true" : "false"} aria-hidden={mode !== "brand"}>
         <BrandSurface onEnterInterface={enterInterface} />
         <SelectedWork />

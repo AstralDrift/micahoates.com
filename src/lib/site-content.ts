@@ -12,9 +12,9 @@ export const site = {
   url: "https://micahoates.com",
   lastModified: "2026-07-17",
   title: "Micah Oates",
-  headline: "Production systems and the tooling around them.",
+  headline: "Systems that survive contact with production.",
   support:
-    "AI agents, platform engineering, DevOps, and the security boundaries that keep ambitious automation from becoming an incident.",
+    "Agent tooling, platform engineering, and the trust boundaries that keep ambitious automation from becoming an incident.",
   description:
     "Micah Oates — production systems, agent tooling, and platform engineering. Brand surface with a deeper keyboard interface.",
   githubUrl: "https://github.com/AstralDrift",

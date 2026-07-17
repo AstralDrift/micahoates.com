@@ -77,7 +77,7 @@ test.beforeEach(async ({ page }) => {
 
 test("brand surface is the default readable entry", async ({ page }) => {
   await expect(app(page).locator(".brand-name")).toBeVisible();
-  await expect(app(page).locator(".brand-headline")).toContainText("Production systems");
+  await expect(app(page).locator(".brand-headline")).toContainText("Systems that survive");
   await expect(app(page).getByRole("button", { name: /Enter interface/i })).toBeVisible();
   await expect(app(page).locator("#selected-work")).toContainText("codex-action-guard");
   await expect(commandInput(page)).toHaveCount(0);

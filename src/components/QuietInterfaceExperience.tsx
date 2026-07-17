@@ -252,6 +252,7 @@ export function QuietInterfaceExperience({ onRequestExit }: QuietInterfaceExperi
         phase={state.phase}
         prompt={prompt}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}
+        exitHint={onRequestExit ? "esc · surface" : undefined}
         lines={lines}
         suggestions={suggestions}
         pathSuggestions={paths}

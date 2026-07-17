@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, Syne } from "next/font/google";
 import Script from "next/script";
 import type { ReactNode } from "react";
 
@@ -7,9 +7,9 @@ import { site } from "@/lib/site-content";
 
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-syne",
   display: "swap"
 });
 
@@ -125,7 +125,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable}`}>
       <head>
         {process.env.NODE_ENV === "development" ? (
           <>

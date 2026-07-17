@@ -4,7 +4,7 @@
 
 An industrial command surface — precise, quiet authority, instrument clarity. The site feels like a calibrated operating console, not a marketing landing page and not a neon hacker terminal.
 
-The signature is the brand name as a hero-level signal over a full-bleed atmospheric field of cool metal gradients and sparse filament apparatus. Interaction is deliberate: brand surface first, deeper keyboard interface second.
+The signature is an asymmetric brand stage: oversized name on the left, a drawn signal schematic on the right that echoes the deeper keyboard interface. A thin instrument rail announces mode. Grain and brass accent keep materiality without glow soup.
 
 ## 2. Color
 
@@ -49,7 +49,7 @@ Legacy aliases (quiet interface): `--bg` = surface-primary, `--text` = text-prim
 | Overline | 0.6875rem | 500 | 1.3 | 0.12em | Section overlines (mono, uppercase) |
 
 ### Font Stack
-- Primary (display/body): Space Grotesk via `next/font`
+- Primary (display/body): Syne via `next/font`
 - Mono (instruments/terminal): IBM Plex Mono via `next/font`
 
 ### Rules
