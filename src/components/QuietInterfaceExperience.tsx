@@ -10,6 +10,7 @@ import { commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, she
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
 import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
+import { chapterLines, type TraceNode } from "@/lib/world-state";
 
 const INITIAL_RENDERED_LINES: RenderedTerminalLine[] = introLines(createInitialState()).map((line, index) => ({
   id: `line-${index + 1}`,
@@ -36,9 +37,10 @@ function isTypingTarget(target: EventTarget | null) {
 
 type QuietInterfaceExperienceProps = {
   onRequestExit?: () => void;
+  entryNode?: TraceNode | null;
 };
 
-export function QuietInterfaceExperience({ onRequestExit }: QuietInterfaceExperienceProps) {
+export function QuietInterfaceExperience({ onRequestExit, entryNode = null }: QuietInterfaceExperienceProps) {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
   const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
@@ -85,16 +87,11 @@ export function QuietInterfaceExperience({ onRequestExit }: QuietInterfaceExperi
     window.setTimeout(() => {
       const restoredState = restoreQuietSession(window.localStorage);
       setState(restoredState);
-      const channelLines =
-        onRequestExit != null
-          ? ([
-              { text: "channel opened from surface", tone: "muted" },
-              { text: "esc returns · ? for directives", tone: "muted" }
-            ] as const)
-          : [];
-      setRenderedLines([...introLines(restoredState), ...channelLines]);
+      const channel =
+        onRequestExit != null ? chapterLines(entryNode ?? null) : [];
+      setRenderedLines([...introLines(restoredState), ...channel]);
     }, 0);
-  }, [onRequestExit, setRenderedLines]);
+  }, [entryNode, onRequestExit, setRenderedLines]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

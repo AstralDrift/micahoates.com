@@ -4,6 +4,7 @@ export type WorkEntry = {
   blurb: string;
   href?: string;
   status?: "public" | "private";
+  featured?: boolean;
 };
 
 export const site = {
@@ -28,7 +29,8 @@ export const site = {
     "automation",
     "developer experience",
     "software engineering",
-    "interactive personal website"
+    "interactive personal website",
+    "trust boundaries"
   ],
   work: [
     {
@@ -36,21 +38,26 @@ export const site = {
       name: "codex-action-guard",
       blurb: "Generate and audit safe-by-default OpenAI Codex GitHub Action workflows.",
       href: "https://github.com/AstralDrift/codex-action-guard",
-      status: "public"
+      status: "public",
+      featured: true
     },
     {
       id: "tradeplane",
       name: "TradePlane",
       blurb: "Field ops product — auth, QR/mobile flows, reports, uploads, Railway deploy.",
-      status: "private"
+      status: "private",
+      featured: true
     },
     {
       id: "micahoates-com",
       name: "micahoates.com",
       blurb: "This site — brand surface with a deeper keyboard interface.",
       href: "https://github.com/AstralDrift/micahoates.com",
-      status: "public"
-    },
+      status: "public",
+      featured: true
+    }
+  ] as const satisfies readonly WorkEntry[],
+  also: [
     {
       id: "draw-party-game",
       name: "draw-party-game",

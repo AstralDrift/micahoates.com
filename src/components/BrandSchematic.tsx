@@ -2,15 +2,26 @@
 
 import { useId, useRef, type PointerEvent } from "react";
 
+import { TRACE_NODES, type TraceNode, type TraceProgress } from "@/lib/world-state";
+
 type BrandSchematicProps = {
-  onEnterInterface: () => void;
+  progress: TraceProgress;
+  activeNode: TraceNode | null;
+  onEnterInterface: (node?: TraceNode) => void;
 };
 
-export function BrandSchematic({ onEnterInterface }: BrandSchematicProps) {
-  const gradientId = useId().replace(/:/g, "");
-  const rootRef = useRef<HTMLButtonElement>(null);
+const NODE_LAYOUT: Record<TraceNode, { cx: number; cy: number; labelX: number; labelY: number }> = {
+  carrier: { cx: 156, cy: 210, labelX: 168, labelY: 204 },
+  signal: { cx: 248, cy: 300, labelX: 258, labelY: 296 },
+  boundary: { cx: 320, cy: 160, labelX: 272, labelY: 148 },
+  release: { cx: 360, cy: 118, labelX: 330, labelY: 104 }
+};
 
-  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+export function BrandSchematic({ progress, activeNode, onEnterInterface }: BrandSchematicProps) {
+  const gradientId = useId().replace(/:/g, "");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const node = rootRef.current;
     if (!node) {
       return;
@@ -34,21 +45,17 @@ export function BrandSchematic({ onEnterInterface }: BrandSchematicProps) {
   };
 
   return (
-    <button
+    <div
       ref={rootRef}
-      type="button"
       className="brand-schematic-hit"
-      onClick={onEnterInterface}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      aria-label="Enter interface via signal schematic"
     >
       <svg
         className="brand-schematic"
         viewBox="0 0 420 480"
-        role="presentation"
-        aria-hidden="true"
-        focusable="false"
+        role="img"
+        aria-label="Signal trace schematic"
       >
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -86,21 +93,32 @@ export function BrandSchematic({ onEnterInterface }: BrandSchematicProps) {
         />
 
         <g className="brand-schematic-nodes">
-          <circle className="brand-schematic-node" cx="156" cy="210" r="3.5" />
-          <circle className="brand-schematic-node" cx="248" cy="300" r="3.5" />
-          <circle className="brand-schematic-node" cx="348" cy="148" r="3.5" />
+          {TRACE_NODES.map((node) => {
+            const layout = NODE_LAYOUT[node];
+            const lit = progress[node];
+            const active = activeNode === node;
+            return (
+              <circle
+                key={node}
+                className={`brand-schematic-node${lit ? " is-lit" : ""}${active ? " is-active" : ""}`}
+                cx={layout.cx}
+                cy={layout.cy}
+                r={active ? 5 : 3.5}
+              />
+            );
+          })}
         </g>
 
         <g className="brand-schematic-labels">
-          <text x="168" y="204">
-            carrier
-          </text>
-          <text x="258" y="296">
-            signal
-          </text>
-          <text x="300" y="136">
-            boundary
-          </text>
+          {TRACE_NODES.map((node) => {
+            const layout = NODE_LAYOUT[node];
+            const lit = progress[node];
+            return (
+              <text key={node} x={layout.labelX} y={layout.labelY} className={lit ? "is-lit" : undefined}>
+                {node}
+              </text>
+            );
+          })}
           <text x="72" y="428">
             TRACE // open channel
           </text>
@@ -108,6 +126,20 @@ export function BrandSchematic({ onEnterInterface }: BrandSchematicProps) {
 
         <line className="brand-schematic-scan" x1="80" y1="88" x2="80" y2="392" />
       </svg>
-    </button>
+
+      <div className="brand-schematic-node-actions">
+        {TRACE_NODES.map((node) => (
+          <button
+            key={node}
+            type="button"
+            className={`brand-schematic-node-btn${progress[node] ? " is-lit" : ""}${activeNode === node ? " is-active" : ""}`}
+            onClick={() => onEnterInterface(node)}
+            aria-label={`Enter interface at ${node} chapter`}
+          >
+            {node}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

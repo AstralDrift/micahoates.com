@@ -13,9 +13,11 @@
 
 ## Product Surface
 
-- Default mode is the **brand surface** (name, pitch, selected work). Pointer input is allowed there.
-- Secondary mode is the **quiet interface** (keyboard-first terminal puzzle). Enter via CTA or `i`; leave via Esc or `exit`.
-- Selected work rows are allowed. Do not add resume spam, social feeds, or visible contact forms.
+- Default mode is the **brand surface** (name, pitch, selected work, case study, notes link). Pointer input is allowed there.
+- Secondary mode is the **quiet interface** (keyboard-first terminal puzzle). Enter via CTA, `i`, schematic node, or `#interface` / `#interface/<node>`.
+- Schematic nodes are chapter hints only — they must not bypass hard puzzle gates.
+- Brand and interface share progress lighting via session storage (wake/signal/boundary/release flags).
+- Selected work rows and one expandable case study are allowed. Do not add resume spam, social feeds, or visible contact forms.
 - Do not expose a primary mailbox. Hidden contact output should use a domain-scoped alias.
 - Do not add analytics, auth, or backend behavior unless the site owner explicitly asks.
 

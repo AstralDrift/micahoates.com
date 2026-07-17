@@ -4,7 +4,7 @@
 
 An industrial command surface — precise, quiet authority, instrument clarity. The site feels like a calibrated operating console, not a marketing landing page and not a neon hacker terminal.
 
-The signature is an asymmetric brand stage: oversized name on the left, a drawn signal schematic on the right that echoes the deeper keyboard interface. A thin instrument rail announces mode. Grain and brass accent keep materiality without glow soup.
+The signature is an asymmetric brand stage: oversized name on the left, a drawn signal schematic on the right whose nodes are chapter entries into the quiet interface. Progress lights the schematic. A morph transition connects brand and terminal. Case study + notes carry substance.
 
 ## 2. Color
 

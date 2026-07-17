@@ -1,13 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BrandSurface } from "@/components/BrandSurface";
 import { QuietInterfaceExperience } from "@/components/QuietInterfaceExperience";
 import { SelectedWork } from "@/components/SelectedWork";
 import { SiteFooter, SiteNote } from "@/components/SiteChrome";
+import {
+  buildInterfaceHash,
+  parseInterfaceHash,
+  type TraceNode
+} from "@/lib/world-state";
 
 type HomeMode = "brand" | "interface";
+type TransitionPhase = "idle" | "entering" | "exiting";
+
+const MORPH_MS = 720;
+const MORPH_REVERSE_MS = 480;
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
@@ -17,27 +26,71 @@ function isTypingTarget(target: EventTarget | null) {
   return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 }
 
-function readInterfaceHash() {
-  return window.location.hash === "#interface";
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function HomeExperience() {
   const [mode, setMode] = useState<HomeMode>("brand");
   const [ready, setReady] = useState(false);
+  const [entryNode, setEntryNode] = useState<TraceNode | null>(null);
+  const [transition, setTransition] = useState<TransitionPhase>("idle");
+  const transitionTimer = useRef<number | null>(null);
 
-  const enterInterface = useCallback(() => {
-    setMode("interface");
-    if (window.location.hash !== "#interface") {
-      window.history.replaceState(null, "", "#interface");
+  const clearTransitionTimer = useCallback(() => {
+    if (transitionTimer.current != null) {
+      window.clearTimeout(transitionTimer.current);
+      transitionTimer.current = null;
     }
   }, []);
+
+  const enterInterface = useCallback(
+    (node?: TraceNode) => {
+      const nextNode = node ?? null;
+      setEntryNode(nextNode);
+      const hash = buildInterfaceHash(nextNode);
+      if (window.location.hash !== hash) {
+        window.history.replaceState(null, "", hash);
+      }
+
+      if (prefersReducedMotion() || mode === "interface") {
+        setTransition("idle");
+        setMode("interface");
+        return;
+      }
+
+      setTransition("entering");
+      clearTransitionTimer();
+      transitionTimer.current = window.setTimeout(() => {
+        setMode("interface");
+        setTransition("idle");
+        transitionTimer.current = null;
+      }, MORPH_MS);
+    },
+    [clearTransitionTimer, mode]
+  );
 
   const exitInterface = useCallback(() => {
-    setMode("brand");
-    if (window.location.hash === "#interface") {
+    if (window.location.hash.startsWith("#interface")) {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     }
-  }, []);
+
+    if (prefersReducedMotion()) {
+      setTransition("idle");
+      setMode("brand");
+      setEntryNode(null);
+      return;
+    }
+
+    setTransition("exiting");
+    setMode("brand");
+    clearTransitionTimer();
+    transitionTimer.current = window.setTimeout(() => {
+      setEntryNode(null);
+      setTransition("idle");
+      transitionTimer.current = null;
+    }, MORPH_REVERSE_MS);
+  }, [clearTransitionTimer]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setReady(true));
@@ -46,7 +99,16 @@ export function HomeExperience() {
 
   useEffect(() => {
     const syncFromHash = () => {
-      setMode(readInterfaceHash() ? "interface" : "brand");
+      const parsed = parseInterfaceHash(window.location.hash);
+      if (parsed.open) {
+        setEntryNode(parsed.node);
+        setMode("interface");
+        setTransition("idle");
+      } else {
+        setMode("brand");
+        setEntryNode(null);
+        setTransition("idle");
+      }
     };
 
     const timeout = window.setTimeout(syncFromHash, 0);
@@ -57,13 +119,15 @@ export function HomeExperience() {
     };
   }, []);
 
+  useEffect(() => () => clearTransitionTimer(), [clearTransitionTimer]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) {
         return;
       }
 
-      if (mode === "brand" && (event.key === "i" || event.key === "I") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (mode === "brand" && transition === "idle" && (event.key === "i" || event.key === "I") && !event.metaKey && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
         enterInterface();
       }
@@ -71,10 +135,10 @@ export function HomeExperience() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [enterInterface, mode]);
+  }, [enterInterface, mode, transition]);
 
   useEffect(() => {
-    if (mode === "interface") {
+    if (mode === "interface" || transition === "entering" || transition === "exiting") {
       document.documentElement.style.overflow = "hidden";
       return () => {
         document.documentElement.style.overflow = "";
@@ -82,18 +146,36 @@ export function HomeExperience() {
     }
 
     return undefined;
-  }, [mode]);
+  }, [mode, transition]);
+
+  const showInterface = mode === "interface" || transition === "entering";
+  const morphing = transition !== "idle";
 
   return (
-    <div className="home-experience" data-mode={mode} data-ready={ready ? "true" : "false"}>
-      <div className="home-brand-layer" data-active={mode === "brand" ? "true" : "false"} aria-hidden={mode !== "brand"}>
-        <BrandSurface onEnterInterface={enterInterface} />
+    <div
+      className="home-experience"
+      data-mode={mode}
+      data-ready={ready ? "true" : "false"}
+      data-transition={transition}
+    >
+      <div
+        className="home-brand-layer"
+        data-active={mode === "brand" || transition === "exiting" || transition === "entering" ? "true" : "false"}
+        aria-hidden={mode !== "brand"}
+      >
+        <BrandSurface onEnterInterface={enterInterface} activeNode={entryNode} morphing={morphing} />
         <SelectedWork />
-        <SiteNote onEnterInterface={enterInterface} />
+        <SiteNote onEnterInterface={() => enterInterface()} />
         <SiteFooter />
       </div>
-      <div className="home-interface-layer" data-active={mode === "interface" ? "true" : "false"} aria-hidden={mode !== "interface"}>
-        {mode === "interface" ? <QuietInterfaceExperience onRequestExit={exitInterface} /> : null}
+      <div
+        className="home-interface-layer"
+        data-active={showInterface ? "true" : "false"}
+        aria-hidden={mode !== "interface"}
+      >
+        {showInterface ? (
+          <QuietInterfaceExperience onRequestExit={exitInterface} entryNode={entryNode} />
+        ) : null}
       </div>
     </div>
   );

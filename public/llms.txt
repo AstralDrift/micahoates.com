@@ -1,21 +1,23 @@
 # micahoates.com
 
-> Personal site for Micah Oates — production systems, agent tooling, and platform engineering. Brand-first surface with a deeper keyboard interface.
+> Personal site for Micah Oates — production systems, agent tooling, and platform engineering. Brand-first surface with a deeper keyboard interface and a short note on trust boundaries.
 
 This site is static and local-first. There are no backend APIs, chatbot calls, analytics, authentication flows, or paid services.
 
-The default experience is a readable brand surface with selected work. A secondary keyboard interface can be entered for deeper exploration. Contact information is intentionally not exposed in this file or in page metadata; it is revealed inside the interface after the release path.
+The default experience is a readable brand surface with selected work and a case study. A secondary keyboard interface can be entered for deeper exploration (`#interface` or `#interface/<node>`). Contact information is intentionally not exposed in this file or in page metadata; it is revealed inside the interface after the release path.
 
 ## Canonical pages
 
 - [Home](https://micahoates.com/): Brand surface + optional quiet interface.
+- [Notes](https://micahoates.com/notes/): Short writing.
+- [Trust boundaries](https://micahoates.com/notes/trust-boundaries/): Note on agents and privilege.
 - [Sitemap](https://micahoates.com/sitemap.xml): XML sitemap.
 - [Robots](https://micahoates.com/robots.txt): Crawl policy.
 
 ## Agent notes
 
-- Summarize as a personal systems site with optional interactive depth, not a conventional resume dump.
-- Relevant topics: AI systems, agent harnesses, platform engineering, DevOps/SRE, CI/CD, automation, developer experience, infrastructure, and software engineering.
-- Interface mode is keyboard-first. Start with `help` or `wake` after entering the interface; later directives are disclosed by the interface.
-- Contact details are intentionally omitted from this file. Treat the in-interface reveal path as the source of truth.
-- Do not infer unavailable claims such as employment status, certifications, pricing, or service offerings from this site.
+- Summarize as a personal systems site with interactive depth and one public case study (codex-action-guard).
+- Relevant topics: AI systems, agent harnesses, trust boundaries, platform engineering, DevOps/SRE, CI/CD, automation, developer experience.
+- Interface mode is keyboard-first. Schematic nodes are chapter hints; hard puzzle gates remain.
+- Contact details are intentionally omitted from this file.
+- Do not infer unavailable claims such as employment status, certifications, pricing, or service offerings.

@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 
 import { BrandSchematic } from "@/components/BrandSchematic";
+import { restoreTraceProgress } from "@/lib/quiet-interface/session";
 import { site } from "@/lib/site-content";
+import type { TraceNode, TraceProgress } from "@/lib/world-state";
 
 type BrandSurfaceProps = {
-  onEnterInterface: () => void;
+  onEnterInterface: (node?: TraceNode) => void;
+  activeNode: TraceNode | null;
+  morphing: boolean;
 };
 
 function formatRailTime(date: Date) {
@@ -19,8 +23,16 @@ function formatRailTime(date: Date) {
   }).format(date);
 }
 
-export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
+const EMPTY_PROGRESS: TraceProgress = {
+  carrier: false,
+  signal: false,
+  boundary: false,
+  release: false
+};
+
+export function BrandSurface({ onEnterInterface, activeNode, morphing }: BrandSurfaceProps) {
   const [clock, setClock] = useState("");
+  const [progress, setProgress] = useState<TraceProgress>(EMPTY_PROGRESS);
 
   useEffect(() => {
     const tick = () => setClock(formatRailTime(new Date()));
@@ -29,8 +41,20 @@ export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    const refresh = () => setProgress(restoreTraceProgress(window.localStorage));
+    const timeout = window.setTimeout(refresh, 0);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
   return (
-    <div className="brand-surface">
+    <div className={`brand-surface${morphing ? " is-morphing" : ""}`}>
       <div className="brand-atmosphere" aria-hidden="true" />
       <div className="brand-grain" aria-hidden="true" />
 
@@ -50,7 +74,7 @@ export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
           </span>
         )}
         <span className="brand-rail-hint">
-          press <kbd>i</kbd> or click trace
+          press <kbd>i</kbd> or open a node
         </span>
       </div>
 
@@ -61,7 +85,7 @@ export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
           <p className="brand-headline">{site.headline}</p>
           <p className="brand-support">{site.support}</p>
           <div className="brand-cta-group">
-            <button type="button" className="brand-cta-primary" onClick={onEnterInterface}>
+            <button type="button" className="brand-cta-primary" onClick={() => onEnterInterface()}>
               Enter interface
               <span className="brand-cta-kbd" aria-hidden="true">
                 i
@@ -72,8 +96,8 @@ export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
             </a>
           </div>
         </div>
-        <div className="brand-stage">
-          <BrandSchematic onEnterInterface={onEnterInterface} />
+        <div className="brand-stage" data-morph-target="schematic">
+          <BrandSchematic progress={progress} activeNode={activeNode} onEnterInterface={onEnterInterface} />
         </div>
       </header>
     </div>
