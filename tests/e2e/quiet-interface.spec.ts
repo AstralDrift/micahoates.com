@@ -27,7 +27,17 @@ function promptText(page: Page) {
 }
 
 async function enterInterface(page: Page) {
-  await app(page).getByRole("button", { name: /Enter interface/i }).click();
+  const input = commandInput(page);
+
+  try {
+    await input.waitFor({ state: "visible", timeout: 2_000 });
+    await waitForTerminalReady(page);
+    return;
+  } catch {
+    // Brand surface is showing — open the interface explicitly.
+  }
+
+  await app(page).getByRole("button", { name: "Enter interface", exact: true }).click();
   await waitForTerminalReady(page);
 }
 
@@ -78,7 +88,7 @@ test.beforeEach(async ({ page }) => {
 test("brand surface is the default readable entry", async ({ page }) => {
   await expect(app(page).locator(".brand-name")).toBeVisible();
   await expect(app(page).locator(".brand-headline")).toContainText("Systems that survive");
-  await expect(app(page).getByRole("button", { name: /Enter interface/i })).toBeVisible();
+  await expect(app(page).getByRole("button", { name: "Enter interface", exact: true })).toBeVisible();
   await expect(app(page).locator("#selected-work")).toContainText("codex-action-guard");
   await expect(commandInput(page)).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
@@ -112,7 +122,23 @@ test("starts as a focused keyboard interface with canvas artifact", async ({ pag
   await expect(page.locator("canvas.quiet-canvas")).toBeVisible();
   await expect(outputText(page)).toContainText("SYSTEM INTERFACE");
   await expect(outputText(page)).toContainText("operator input required");
+  await expect(outputText(page)).toContainText("channel opened from surface");
   await expectNoHorizontalOverflow(page);
+});
+
+test("hash deep-link opens interface mode", async ({ page }) => {
+  await page.goto("/#interface");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+  await waitForTerminalReady(page);
+  await expect(outputText(page)).toContainText("channel opened from surface");
+  await expect(page).toHaveURL(/#interface/);
+});
+
+test("schematic click enters interface", async ({ page }) => {
+  await app(page).getByRole("button", { name: /Enter interface via signal schematic/i }).click();
+  await waitForTerminalReady(page);
+  await expect(page).toHaveURL(/#interface/);
 });
 
 test("autocomplete, palette, history, clear, and invalid input work", async ({ page }) => {

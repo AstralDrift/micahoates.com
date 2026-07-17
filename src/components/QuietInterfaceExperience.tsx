@@ -85,9 +85,16 @@ export function QuietInterfaceExperience({ onRequestExit }: QuietInterfaceExperi
     window.setTimeout(() => {
       const restoredState = restoreQuietSession(window.localStorage);
       setState(restoredState);
-      setRenderedLines(introLines(restoredState));
+      const channelLines =
+        onRequestExit != null
+          ? ([
+              { text: "channel opened from surface", tone: "muted" },
+              { text: "esc returns · ? for directives", tone: "muted" }
+            ] as const)
+          : [];
+      setRenderedLines([...introLines(restoredState), ...channelLines]);
     }, 0);
-  }, [setRenderedLines]);
+  }, [onRequestExit, setRenderedLines]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

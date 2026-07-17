@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { BrandSchematic } from "@/components/BrandSchematic";
 import { site } from "@/lib/site-content";
 
@@ -7,20 +9,48 @@ type BrandSurfaceProps = {
   onEnterInterface: () => void;
 };
 
+function formatRailTime(date: Date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "short"
+  }).format(date);
+}
+
 export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
+  const [clock, setClock] = useState("");
+
+  useEffect(() => {
+    const tick = () => setClock(formatRailTime(new Date()));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className="brand-surface">
       <div className="brand-atmosphere" aria-hidden="true" />
       <div className="brand-grain" aria-hidden="true" />
 
-      <div className="brand-rail" aria-hidden="true">
+      <div className="brand-rail">
         <span className="brand-rail-mark">{site.domain}</span>
-        <span className="brand-rail-sep" />
+        <span className="brand-rail-sep" aria-hidden="true" />
         <span>surface</span>
         <span className="brand-rail-live">ready</span>
-        <span className="brand-rail-spacer" />
+        <span className="brand-rail-spacer" aria-hidden="true" />
+        {clock ? (
+          <span className="brand-rail-clock" aria-live="off">
+            {clock}
+          </span>
+        ) : (
+          <span className="brand-rail-clock brand-rail-clock-pending" aria-hidden="true">
+            --:--:--
+          </span>
+        )}
         <span className="brand-rail-hint">
-          press <kbd>i</kbd> for interface
+          press <kbd>i</kbd> or click trace
         </span>
       </div>
 
@@ -43,7 +73,7 @@ export function BrandSurface({ onEnterInterface }: BrandSurfaceProps) {
           </div>
         </div>
         <div className="brand-stage">
-          <BrandSchematic />
+          <BrandSchematic onEnterInterface={onEnterInterface} />
         </div>
       </header>
     </div>

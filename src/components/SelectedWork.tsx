@@ -1,8 +1,38 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useEffect, useRef, type CSSProperties } from "react";
 
 import { site } from "@/lib/site-content";
 
 export function SelectedWork() {
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) {
+      return;
+    }
+
+    const rows = [...list.querySelectorAll<HTMLElement>(".selected-work-row")];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.18, rootMargin: "0px 0px -8% 0px" }
+    );
+
+    for (const row of rows) {
+      observer.observe(row);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section id="selected-work" className="selected-work" aria-labelledby="selected-work-title">
       <div className="selected-work-head">
@@ -17,14 +47,18 @@ export function SelectedWork() {
         </p>
       </div>
 
-      <ul className="selected-work-list">
+      <ul ref={listRef} className="selected-work-list">
         {site.work.map((entry, index) => {
           const href = "href" in entry ? entry.href : undefined;
           const status = "status" in entry ? entry.status : undefined;
           const ordinal = String(index + 1).padStart(2, "0");
 
           return (
-            <li key={entry.id} className="selected-work-row" style={{ "--row-index": index } as CSSProperties}>
+            <li
+              key={entry.id}
+              className="selected-work-row"
+              style={{ "--row-index": index } as CSSProperties}
+            >
               <span className="selected-work-index" aria-hidden="true">
                 {ordinal}
               </span>

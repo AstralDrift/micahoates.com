@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BrandSurface } from "@/components/BrandSurface";
 import { QuietInterfaceExperience } from "@/components/QuietInterfaceExperience";
 import { SelectedWork } from "@/components/SelectedWork";
+import { SiteFooter, SiteNote } from "@/components/SiteChrome";
 
 type HomeMode = "brand" | "interface";
 
@@ -16,21 +17,44 @@ function isTypingTarget(target: EventTarget | null) {
   return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 }
 
+function readInterfaceHash() {
+  return window.location.hash === "#interface";
+}
+
 export function HomeExperience() {
   const [mode, setMode] = useState<HomeMode>("brand");
   const [ready, setReady] = useState(false);
 
   const enterInterface = useCallback(() => {
     setMode("interface");
+    if (window.location.hash !== "#interface") {
+      window.history.replaceState(null, "", "#interface");
+    }
   }, []);
 
   const exitInterface = useCallback(() => {
     setMode("brand");
+    if (window.location.hash === "#interface") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
   }, []);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setReady(true));
     return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      setMode(readInterfaceHash() ? "interface" : "brand");
+    };
+
+    const timeout = window.setTimeout(syncFromHash, 0);
+    window.addEventListener("hashchange", syncFromHash);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("hashchange", syncFromHash);
+    };
   }, []);
 
   useEffect(() => {
@@ -65,6 +89,8 @@ export function HomeExperience() {
       <div className="home-brand-layer" data-active={mode === "brand" ? "true" : "false"} aria-hidden={mode !== "brand"}>
         <BrandSurface onEnterInterface={enterInterface} />
         <SelectedWork />
+        <SiteNote onEnterInterface={enterInterface} />
+        <SiteFooter />
       </div>
       <div className="home-interface-layer" data-active={mode === "interface" ? "true" : "false"} aria-hidden={mode !== "interface"}>
         {mode === "interface" ? <QuietInterfaceExperience onRequestExit={exitInterface} /> : null}
