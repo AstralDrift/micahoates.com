@@ -1,0 +1,130 @@
+/* —— Case study / secondary / also-built —— */
+
+.case-study {
+  margin-top: var(--space-16);
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border-default);
+}
+
+.case-study-title {
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.case-study-summary {
+  margin: 0 0 var(--space-5);
+  max-width: 54ch;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.case-study-toggle {
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  transition:
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 120ms ease-out;
+}
+
+.case-study-toggle:hover,
+.case-study-toggle:focus-visible {
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+}
+
+.case-study-toggle:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.case-study-panel {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+  max-width: 54rem;
+}
+
+.case-study-block h4 {
+  margin: 0 0 var(--space-2);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.case-study-block p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.975rem;
+  line-height: 1.65;
+}
+
+.case-study-link {
+  width: max-content;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.case-study-link:hover,
+.case-study-link:focus-visible {
+  color: var(--accent-hover);
+}
+
+.secondary-cases {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+  max-width: 54rem;
+}
+
+.secondary-case {
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.secondary-case-boundary {
+  margin: var(--space-3) 0 0;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.also-built {
+  margin-top: var(--space-12);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.also-built-list {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.also-built-list a {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  text-decoration: none;
+}
+
+.also-built-list a:hover,
+.also-built-list a:focus-visible {
+  color: var(--accent-hover);
+}

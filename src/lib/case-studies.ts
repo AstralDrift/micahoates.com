@@ -10,6 +10,14 @@ export type CaseStudy = {
   stillBreaks: string;
 };
 
+export type SecondaryCase = {
+  id: string;
+  title: string;
+  status: "public" | "private";
+  summary: string;
+  boundary: string;
+};
+
 export const primaryCase: CaseStudy = {
   id: "codex-action-guard",
   title: "codex-action-guard",
@@ -27,19 +35,13 @@ export const primaryCase: CaseStudy = {
     "Rule packs lag novel workflow shapes. False positives happen. The tool cannot invent organizational policy — it can only make unsafe composition visible and harder to ship by accident."
 };
 
-export const secondaryCases: CaseStudy[] = [
+export const secondaryCases: SecondaryCase[] = [
   {
     id: "tradeplane",
     title: "TradePlane",
     status: "private",
     summary: "Field ops software where auth, QR/mobile, uploads, reports, and Railway deploys share one promotion path.",
-    problem:
-      "Field tools fail when web assumptions meet phones, offline-ish networks, and “it worked on staging” deploys that never touched the QR path.",
     boundary:
-      "Tenant isolation and deploy gates are product features. Preview → staging → production must prove the workflow that operators actually run.",
-    mechanism:
-      "Canonical repo, PR previews, local validation gates, and smoke against the deployed head before merge. Constraints over ceremony.",
-    stillBreaks:
-      "Private product — no public metrics. The hard parts remain: device variance, auth edge cases, and keeping runbooks honest when the system moves."
+      "Tenant isolation and deploy gates are product features. Preview → staging → production must prove the workflow that operators actually run."
   }
 ];

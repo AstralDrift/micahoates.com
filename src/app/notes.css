@@ -1,0 +1,111 @@
+/* —— Notes surface —— */
+
+.note-page {
+  min-height: 100dvh;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+
+.note-rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  padding: 0 clamp(1.25rem, 4vw, var(--space-12));
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.note-rail a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.note-rail a:hover,
+.note-rail a:focus-visible {
+  color: var(--accent-hover);
+}
+
+.note-rail-sep {
+  width: 1px;
+  height: 0.75rem;
+  background: var(--border-default);
+}
+
+.note-article,
+.note-index {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--space-16) clamp(1.25rem, 4vw, var(--space-12)) var(--space-24);
+}
+
+.note-overline {
+  margin: 0 0 var(--space-4);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.note-title {
+  margin: 0 0 var(--space-4);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.note-dek {
+  margin: 0 0 var(--space-10);
+  color: var(--text-secondary);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+.note-body {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.note-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.note-index-list {
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.note-index-list li {
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--border-default);
+}
+
+.note-index-list a {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.note-index-list a:hover,
+.note-index-list a:focus-visible {
+  color: var(--accent-hover);
+}
+
+.note-index-list p {
+  margin: var(--space-2) 0 0;
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}

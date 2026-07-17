@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 
 import { BrandSchematic } from "@/components/BrandSchematic";
-import { restoreTraceProgress } from "@/lib/quiet-interface/session";
 import { site } from "@/lib/site-content";
 import type { TraceNode, TraceProgress } from "@/lib/world-state";
 
 type BrandSurfaceProps = {
   onEnterInterface: (node?: TraceNode) => void;
   activeNode: TraceNode | null;
-  morphing: boolean;
+  progress: TraceProgress;
 };
 
 function formatRailTime(date: Date) {
@@ -23,16 +22,8 @@ function formatRailTime(date: Date) {
   }).format(date);
 }
 
-const EMPTY_PROGRESS: TraceProgress = {
-  carrier: false,
-  signal: false,
-  boundary: false,
-  release: false
-};
-
-export function BrandSurface({ onEnterInterface, activeNode, morphing }: BrandSurfaceProps) {
+export function BrandSurface({ onEnterInterface, activeNode, progress }: BrandSurfaceProps) {
   const [clock, setClock] = useState("");
-  const [progress, setProgress] = useState<TraceProgress>(EMPTY_PROGRESS);
 
   useEffect(() => {
     const tick = () => setClock(formatRailTime(new Date()));
@@ -41,20 +32,8 @@ export function BrandSurface({ onEnterInterface, activeNode, morphing }: BrandSu
     return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    const refresh = () => setProgress(restoreTraceProgress(window.localStorage));
-    const timeout = window.setTimeout(refresh, 0);
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.clearTimeout(timeout);
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, []);
-
   return (
-    <div className={`brand-surface${morphing ? " is-morphing" : ""}`}>
+    <div className="brand-surface">
       <div className="brand-atmosphere" aria-hidden="true" />
       <div className="brand-grain" aria-hidden="true" />
 
@@ -96,7 +75,7 @@ export function BrandSurface({ onEnterInterface, activeNode, morphing }: BrandSu
             </a>
           </div>
         </div>
-        <div className="brand-stage" data-morph-target="schematic">
+        <div className="brand-stage">
           <BrandSchematic progress={progress} activeNode={activeNode} onEnterInterface={onEnterInterface} />
         </div>
       </header>

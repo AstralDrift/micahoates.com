@@ -1,7 +1,21 @@
-import { createInitialState, createReleasedState, type QuietInterfaceState } from "@/lib/quiet-interface/state";
-import { progressFromState, type TraceProgress } from "@/lib/world-state";
+import {
+  createInitialState,
+  createReleasedState,
+  type InterfacePhase,
+  type QuietInterfaceState
+} from "@/lib/quiet-interface/state";
+import { EMPTY_TRACE_PROGRESS, progressFromState, type TraceProgress } from "@/lib/world-state";
 
 const STORAGE_KEY = "quiet-interface-state";
+
+const INTERFACE_PHASES: readonly InterfacePhase[] = [
+  "dormant",
+  "observation",
+  "assembly",
+  "boundary",
+  "inside",
+  "outside"
+];
 
 type StoredQuietInterfaceState = {
   hasReleased?: boolean;
@@ -11,6 +25,10 @@ type StoredQuietInterfaceState = {
   boundaryVisible?: boolean;
   lastPhase?: QuietInterfaceState["phase"];
 };
+
+function isInterfacePhase(value: unknown): value is InterfacePhase {
+  return typeof value === "string" && (INTERFACE_PHASES as readonly string[]).includes(value);
+}
 
 export function restoreQuietSession(storage: Storage): QuietInterfaceState {
   const stored = storage.getItem(STORAGE_KEY);
@@ -32,16 +50,9 @@ export function restoreQuietSession(storage: Storage): QuietInterfaceState {
 
 /** Lightweight progress for brand schematic lighting (survives before full release). */
 export function restoreTraceProgress(storage: Storage): TraceProgress {
-  const empty: TraceProgress = {
-    carrier: false,
-    signal: false,
-    boundary: false,
-    release: false
-  };
-
   const stored = storage.getItem(STORAGE_KEY);
   if (!stored) {
-    return empty;
+    return EMPTY_TRACE_PROGRESS;
   }
 
   try {
@@ -50,14 +61,16 @@ export function restoreTraceProgress(storage: Storage): TraceProgress {
       return progressFromState(createReleasedState());
     }
 
-    return {
-      carrier: Boolean(parsed.hasWoken),
-      signal: Boolean(parsed.hasDecodedSignal || parsed.hasMadeSignal),
-      boundary: Boolean(parsed.boundaryVisible),
-      release: false
-    };
+    return progressFromState({
+      hasWoken: Boolean(parsed.hasWoken),
+      hasDecodedSignal: Boolean(parsed.hasDecodedSignal),
+      hasMadeSignal: Boolean(parsed.hasMadeSignal),
+      boundaryVisible: Boolean(parsed.boundaryVisible),
+      hasReleased: false,
+      phase: isInterfacePhase(parsed.lastPhase) ? parsed.lastPhase : "dormant"
+    });
   } catch {
-    return empty;
+    return EMPTY_TRACE_PROGRESS;
   }
 }
 

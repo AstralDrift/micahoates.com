@@ -1,4 +1,5 @@
 import type { TerminalLine } from "@/lib/quiet-interface/state";
+import type { TraceNode } from "@/lib/world-state";
 
 export type CommandDefinition = {
   command: string;
@@ -123,5 +124,20 @@ export function contactLines(): TerminalLine[] {
     { text: "  name: micah oates" },
     { text: `  contact: ${contactAddress()}` },
     { text: "  fields: platform / devops / software / ai systems" }
+  ];
+}
+
+export function chapterLines(node: TraceNode | null): TerminalLine[] {
+  if (!node) {
+    return [
+      { text: "channel opened from surface", tone: "muted" },
+      { text: "esc returns · ? for directives", tone: "muted" }
+    ];
+  }
+
+  return [
+    { text: `channel: ${node}`, tone: "accent" },
+    { text: "chapter hint only — hard gates remain", tone: "muted" },
+    { text: "esc returns · ? for directives", tone: "muted" }
   ];
 }

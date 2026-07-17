@@ -6,11 +6,13 @@ import type { CSSProperties } from "react";
 import { CommandPalette } from "@/components/CommandPalette";
 import { QuietInterfaceCanvas } from "@/components/QuietInterfaceCanvas";
 import { QuietTerminal, type RenderedTerminalLine } from "@/components/QuietTerminal";
+import { isTypingTarget } from "@/lib/dom";
 import { commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, shellPrompt } from "@/lib/quiet-interface/commands";
+import { chapterLines } from "@/lib/quiet-interface/copy";
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
 import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
-import { chapterLines, type TraceNode } from "@/lib/world-state";
+import { progressFromState, type TraceNode, type TraceProgress } from "@/lib/world-state";
 
 const INITIAL_RENDERED_LINES: RenderedTerminalLine[] = introLines(createInitialState()).map((line, index) => ({
   id: `line-${index + 1}`,
@@ -27,22 +29,22 @@ type QuietInterfaceStyle = CSSProperties & {
   "--keyboard-inset": string;
 };
 
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-}
-
 type QuietInterfaceExperienceProps = {
   onRequestExit?: () => void;
   entryNode?: TraceNode | null;
+  onProgress?: (progress: TraceProgress) => void;
 };
 
-export function QuietInterfaceExperience({ onRequestExit, entryNode = null }: QuietInterfaceExperienceProps) {
+export function QuietInterfaceExperience({
+  onRequestExit,
+  entryNode = null,
+  onProgress
+}: QuietInterfaceExperienceProps) {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
   const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
+  const entryNodeRef = useRef(entryNode);
+  const onRequestExitRef = useRef(onRequestExit);
+  const onProgressRef = useRef(onProgress);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
   const [lines, setLines] = useState<RenderedTerminalLine[]>(() => INITIAL_RENDERED_LINES);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -68,6 +70,13 @@ export function QuietInterfaceExperience({ onRequestExit, entryNode = null }: Qu
     [makeLine]
   );
 
+  const setRenderedLinesRef = useRef(setRenderedLines);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+    setRenderedLinesRef.current = setRenderedLines;
+  }, [onProgress, setRenderedLines]);
+
   const appendLines = useCallback(
     (nextLines: TerminalLine[]) => {
       setLines((current) => [...current, ...nextLines.map(makeLine)]);
@@ -83,15 +92,21 @@ export function QuietInterfaceExperience({ onRequestExit, entryNode = null }: Qu
     });
   }, []);
 
+  const reportProgress = useCallback((nextState: QuietInterfaceState) => {
+    onProgressRef.current?.(progressFromState(nextState));
+  }, []);
+
   useEffect(() => {
-    window.setTimeout(() => {
+    const timeout = window.setTimeout(() => {
       const restoredState = restoreQuietSession(window.localStorage);
       setState(restoredState);
       const channel =
-        onRequestExit != null ? chapterLines(entryNode ?? null) : [];
-      setRenderedLines([...introLines(restoredState), ...channel]);
+        onRequestExitRef.current != null ? chapterLines(entryNodeRef.current ?? null) : [];
+      setRenderedLinesRef.current([...introLines(restoredState), ...channel]);
+      onProgressRef.current?.(progressFromState(restoredState));
     }, 0);
-  }, [entryNode, onRequestExit, setRenderedLines]);
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -194,15 +209,17 @@ export function QuietInterfaceExperience({ onRequestExit, entryNode = null }: Qu
         clearQuietSession(window.localStorage);
         setState(nextState);
         setRenderedLines([...introLines(nextState), ...result.output]);
+        reportProgress(nextState);
         return;
       }
 
       persistQuietSession(window.localStorage, nextState);
+      reportProgress(nextState);
 
       setState(nextState);
       appendLines([{ text: `> ${command}`, tone: "input" }, ...result.output]);
     },
-    [appendLines, emitTerminalSignal, onRequestExit, setRenderedLines, state]
+    [appendLines, emitTerminalSignal, onRequestExit, reportProgress, setRenderedLines, state]
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {

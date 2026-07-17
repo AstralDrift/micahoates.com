@@ -1,40 +1,82 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { BrandSurface } from "@/components/BrandSurface";
 import { QuietInterfaceExperience } from "@/components/QuietInterfaceExperience";
 import { SelectedWork } from "@/components/SelectedWork";
 import { SiteFooter, SiteNote } from "@/components/SiteChrome";
+import { isTypingTarget } from "@/lib/dom";
+import { MORPH_ENTER_MS, MORPH_EXIT_MS } from "@/lib/morph";
+import { restoreTraceProgress } from "@/lib/quiet-interface/session";
 import {
   buildInterfaceHash,
+  EMPTY_TRACE_PROGRESS,
   parseInterfaceHash,
-  type TraceNode
+  type TraceNode,
+  type TraceProgress
 } from "@/lib/world-state";
 
-type HomeMode = "brand" | "interface";
-type TransitionPhase = "idle" | "entering" | "exiting";
-
-const MORPH_MS = 720;
-const MORPH_REVERSE_MS = 480;
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-}
+type Surface =
+  | { kind: "brand" }
+  | { kind: "to-interface"; node: TraceNode | null }
+  | { kind: "interface"; node: TraceNode | null }
+  | { kind: "to-brand"; node: TraceNode | null };
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function dataMode(surface: Surface): "brand" | "interface" {
+  switch (surface.kind) {
+    case "brand":
+    case "to-brand":
+      return "brand";
+    case "to-interface":
+    case "interface":
+      return "interface";
+    default: {
+      const _exhaustive: never = surface;
+      return _exhaustive;
+    }
+  }
+}
+
+function dataTransition(surface: Surface): "idle" | "entering" | "exiting" {
+  switch (surface.kind) {
+    case "to-interface":
+      return "entering";
+    case "to-brand":
+      return "exiting";
+    case "brand":
+    case "interface":
+      return "idle";
+    default: {
+      const _exhaustive: never = surface;
+      return _exhaustive;
+    }
+  }
+}
+
+function surfaceNode(surface: Surface): TraceNode | null {
+  switch (surface.kind) {
+    case "brand":
+      return null;
+    case "to-interface":
+    case "interface":
+    case "to-brand":
+      return surface.node;
+    default: {
+      const _exhaustive: never = surface;
+      return _exhaustive;
+    }
+  }
+}
+
 export function HomeExperience() {
-  const [mode, setMode] = useState<HomeMode>("brand");
+  const [surface, setSurface] = useState<Surface>({ kind: "brand" });
   const [ready, setReady] = useState(false);
-  const [entryNode, setEntryNode] = useState<TraceNode | null>(null);
-  const [transition, setTransition] = useState<TransitionPhase>("idle");
+  const [progress, setProgress] = useState<TraceProgress>(EMPTY_TRACE_PROGRESS);
   const transitionTimer = useRef<number | null>(null);
 
   const clearTransitionTimer = useCallback(() => {
@@ -47,27 +89,24 @@ export function HomeExperience() {
   const enterInterface = useCallback(
     (node?: TraceNode) => {
       const nextNode = node ?? null;
-      setEntryNode(nextNode);
       const hash = buildInterfaceHash(nextNode);
       if (window.location.hash !== hash) {
         window.history.replaceState(null, "", hash);
       }
 
-      if (prefersReducedMotion() || mode === "interface") {
-        setTransition("idle");
-        setMode("interface");
+      if (prefersReducedMotion() || surface.kind === "interface") {
+        setSurface({ kind: "interface", node: nextNode });
         return;
       }
 
-      setTransition("entering");
+      setSurface({ kind: "to-interface", node: nextNode });
       clearTransitionTimer();
       transitionTimer.current = window.setTimeout(() => {
-        setMode("interface");
-        setTransition("idle");
+        setSurface({ kind: "interface", node: nextNode });
         transitionTimer.current = null;
-      }, MORPH_MS);
+      }, MORPH_ENTER_MS);
     },
-    [clearTransitionTimer, mode]
+    [clearTransitionTimer, surface.kind]
   );
 
   const exitInterface = useCallback(() => {
@@ -75,22 +114,20 @@ export function HomeExperience() {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     }
 
+    const node = surfaceNode(surface);
+
     if (prefersReducedMotion()) {
-      setTransition("idle");
-      setMode("brand");
-      setEntryNode(null);
+      setSurface({ kind: "brand" });
       return;
     }
 
-    setTransition("exiting");
-    setMode("brand");
+    setSurface({ kind: "to-brand", node });
     clearTransitionTimer();
     transitionTimer.current = window.setTimeout(() => {
-      setEntryNode(null);
-      setTransition("idle");
+      setSurface({ kind: "brand" });
       transitionTimer.current = null;
-    }, MORPH_REVERSE_MS);
-  }, [clearTransitionTimer]);
+    }, MORPH_EXIT_MS);
+  }, [clearTransitionTimer, surface]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setReady(true));
@@ -98,16 +135,19 @@ export function HomeExperience() {
   }, []);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setProgress(restoreTraceProgress(window.localStorage));
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     const syncFromHash = () => {
       const parsed = parseInterfaceHash(window.location.hash);
       if (parsed.open) {
-        setEntryNode(parsed.node);
-        setMode("interface");
-        setTransition("idle");
+        setSurface({ kind: "interface", node: parsed.node });
       } else {
-        setMode("brand");
-        setEntryNode(null);
-        setTransition("idle");
+        setSurface({ kind: "brand" });
       }
     };
 
@@ -127,7 +167,13 @@ export function HomeExperience() {
         return;
       }
 
-      if (mode === "brand" && transition === "idle" && (event.key === "i" || event.key === "I") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (
+        surface.kind === "brand" &&
+        (event.key === "i" || event.key === "I") &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
         event.preventDefault();
         enterInterface();
       }
@@ -135,10 +181,17 @@ export function HomeExperience() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [enterInterface, mode, transition]);
+  }, [enterInterface, surface.kind]);
+
+  const mode = dataMode(surface);
+  const transition = dataTransition(surface);
+  const entryNode = surfaceNode(surface);
+  const showInterface = surface.kind === "interface" || surface.kind === "to-interface";
+  const brandActive =
+    surface.kind === "brand" || surface.kind === "to-brand" || surface.kind === "to-interface";
 
   useEffect(() => {
-    if (mode === "interface" || transition === "entering" || transition === "exiting") {
+    if (showInterface || surface.kind === "to-brand") {
       document.documentElement.style.overflow = "hidden";
       return () => {
         document.documentElement.style.overflow = "";
@@ -146,10 +199,7 @@ export function HomeExperience() {
     }
 
     return undefined;
-  }, [mode, transition]);
-
-  const showInterface = mode === "interface" || transition === "entering";
-  const morphing = transition !== "idle";
+  }, [showInterface, surface.kind]);
 
   return (
     <div
@@ -157,13 +207,19 @@ export function HomeExperience() {
       data-mode={mode}
       data-ready={ready ? "true" : "false"}
       data-transition={transition}
+      style={
+        {
+          "--morph-enter-ms": `${MORPH_ENTER_MS}`,
+          "--morph-exit-ms": `${MORPH_EXIT_MS}`
+        } as CSSProperties
+      }
     >
       <div
         className="home-brand-layer"
-        data-active={mode === "brand" || transition === "exiting" || transition === "entering" ? "true" : "false"}
+        data-active={brandActive ? "true" : "false"}
         aria-hidden={mode !== "brand"}
       >
-        <BrandSurface onEnterInterface={enterInterface} activeNode={entryNode} morphing={morphing} />
+        <BrandSurface onEnterInterface={enterInterface} activeNode={entryNode} progress={progress} />
         <SelectedWork />
         <SiteNote onEnterInterface={() => enterInterface()} />
         <SiteFooter />
@@ -171,10 +227,14 @@ export function HomeExperience() {
       <div
         className="home-interface-layer"
         data-active={showInterface ? "true" : "false"}
-        aria-hidden={mode !== "interface"}
+        aria-hidden={surface.kind !== "interface"}
       >
         {showInterface ? (
-          <QuietInterfaceExperience onRequestExit={exitInterface} entryNode={entryNode} />
+          <QuietInterfaceExperience
+            onRequestExit={exitInterface}
+            entryNode={entryNode}
+            onProgress={setProgress}
+          />
         ) : null}
       </div>
     </div>
