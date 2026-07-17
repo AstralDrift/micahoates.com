@@ -1,50 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">System Interface</title>
-  <desc id="desc">A quiet keyboard-controlled interface preview for micahoates.com.</desc>
-  <rect width="1200" height="630" fill="#020302"/>
-  <g opacity="0.32" stroke="#76efb6" stroke-width="1">
+  <title id="title">Micah Oates</title>
+  <desc id="desc">Systems console preview for micahoates.com.</desc>
+  <rect width="1200" height="630" fill="#0B0D10"/>
+  <g opacity="0.28" stroke="#2A2E35" stroke-width="1">
     <path d="M96 96h1008M96 168h1008M96 240h1008M96 312h1008M96 384h1008M96 456h1008M96 528h1008"/>
     <path d="M168 60v510M264 60v510M360 60v510M456 60v510M552 60v510M648 60v510M744 60v510M840 60v510M936 60v510M1032 60v510"/>
   </g>
-  <g transform="translate(720 315)" fill="#76efb6" opacity="0.72">
-    <rect x="-152" y="-68" width="8" height="8"/>
-    <rect x="-128" y="-80" width="8" height="8"/>
-    <rect x="-104" y="-88" width="8" height="8"/>
-    <rect x="-80" y="-92" width="8" height="8"/>
-    <rect x="-56" y="-96" width="8" height="8"/>
-    <rect x="-32" y="-96" width="8" height="8"/>
-    <rect x="-8" y="-92" width="8" height="8"/>
-    <rect x="16" y="-84" width="8" height="8"/>
-    <rect x="40" y="-72" width="8" height="8"/>
-    <rect x="64" y="-56" width="8" height="8"/>
-    <rect x="88" y="-36" width="8" height="8"/>
-    <rect x="104" y="-12" width="8" height="8"/>
-    <rect x="112" y="12" width="8" height="8"/>
-    <rect x="104" y="36" width="8" height="8"/>
-    <rect x="88" y="56" width="8" height="8"/>
-    <rect x="64" y="72" width="8" height="8"/>
-    <rect x="40" y="84" width="8" height="8"/>
-    <rect x="16" y="92" width="8" height="8"/>
-    <rect x="-8" y="96" width="8" height="8"/>
-    <rect x="-32" y="96" width="8" height="8"/>
-    <rect x="-56" y="92" width="8" height="8"/>
-    <rect x="-80" y="84" width="8" height="8"/>
-    <rect x="-104" y="72" width="8" height="8"/>
-    <rect x="-128" y="56" width="8" height="8"/>
-    <rect x="-144" y="32" width="8" height="8"/>
-    <rect x="-152" y="8" width="8" height="8"/>
-    <rect x="-152" y="-16" width="8" height="8"/>
-    <rect x="-144" y="-40" width="8" height="8"/>
-  </g>
-  <g fill="#67dff3" opacity="0.58">
-    <rect x="668" y="303" width="12" height="12"/>
-    <rect x="692" y="303" width="12" height="12"/>
-    <rect x="716" y="303" width="12" height="12"/>
-    <rect x="740" y="303" width="12" height="12"/>
-    <rect x="764" y="303" width="12" height="12"/>
-  </g>
-  <text x="96" y="242" fill="#edf5ef" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="56" letter-spacing="0">SYSTEM INTERFACE</text>
-  <text x="96" y="300" fill="#76efb6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28">state: dormant</text>
-  <text x="96" y="348" fill="#738077" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">operator input required</text>
-  <text x="96" y="514" fill="#76efb6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">&gt; wake</text>
+  <circle cx="900" cy="300" r="140" fill="none" stroke="#8FA8BC" stroke-opacity="0.22" stroke-width="1"/>
+  <circle cx="900" cy="300" r="88" fill="none" stroke="#C4A574" stroke-opacity="0.28" stroke-width="1"/>
+  <text x="96" y="250" fill="#E8E6E1" font-family="system-ui, sans-serif" font-size="64" font-weight="500" letter-spacing="-1">Micah Oates</text>
+  <text x="96" y="320" fill="#C4A574" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28">production systems · agent tooling · platform</text>
+  <text x="96" y="500" fill="#9A9690" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">micahoates.com</text>
 </svg>

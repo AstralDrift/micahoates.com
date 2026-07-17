@@ -26,6 +26,11 @@ function promptText(page: Page) {
   return app(page).locator(".quiet-terminal-prompt");
 }
 
+async function enterInterface(page: Page) {
+  await app(page).getByRole("button", { name: /Enter interface/i }).click();
+  await waitForTerminalReady(page);
+}
+
 async function waitForTerminalReady(page: Page) {
   await expect(commandInput(page)).toBeVisible();
   await expect
@@ -49,13 +54,17 @@ async function expectNoHorizontalOverflow(page: Page) {
         scrollWidth: document.documentElement.scrollWidth
       }))
     )
-    .toEqual(expect.objectContaining({
-      bodyScrollWidth: expect.any(Number),
-      innerWidth: expect.any(Number),
-      scrollWidth: expect.any(Number)
-    }));
+    .toEqual(
+      expect.objectContaining({
+        bodyScrollWidth: expect.any(Number),
+        innerWidth: expect.any(Number),
+        scrollWidth: expect.any(Number)
+      })
+    );
 
-  const overflow = await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - window.innerWidth);
+  const overflow = await page.evaluate(
+    () => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) - window.innerWidth
+  );
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
@@ -63,10 +72,39 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
+  await expect(app(page).locator(".brand-name")).toHaveText("Micah Oates");
+});
+
+test("brand surface is the default readable entry", async ({ page }) => {
+  await expect(app(page).locator(".brand-name")).toBeVisible();
+  await expect(app(page).locator(".brand-headline")).toContainText("Production systems");
+  await expect(app(page).getByRole("button", { name: /Enter interface/i })).toBeVisible();
+  await expect(app(page).locator("#selected-work")).toContainText("codex-action-guard");
+  await expect(commandInput(page)).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+});
+
+test("enter interface via CTA and return via Escape", async ({ page }) => {
+  await enterInterface(page);
+  await expect(phaseLabel(page)).toHaveText("dormant");
+  await expect(page.locator("canvas.quiet-canvas")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(app(page).locator(".brand-name")).toBeVisible();
+  await expect(commandInput(page)).toHaveCount(0);
+});
+
+test("enter interface via keyboard and exit via command", async ({ page }) => {
+  await page.keyboard.press("i");
   await waitForTerminalReady(page);
+
+  await runCommand(page, "exit");
+  await expect(app(page).locator(".brand-name")).toBeVisible({ timeout: 3000 });
+  await expect(commandInput(page)).toHaveCount(0);
 });
 
 test("starts as a focused keyboard interface with canvas artifact", async ({ page }) => {
+  await enterInterface(page);
   await expect(phaseLabel(page)).toHaveText("dormant");
   await expect(commandInput(page)).toBeFocused();
   await expect(commandInput(page)).toHaveAttribute("placeholder", "command");
@@ -78,6 +116,7 @@ test("starts as a focused keyboard interface with canvas artifact", async ({ pag
 });
 
 test("autocomplete, palette, history, clear, and invalid input work", async ({ page }) => {
+  await enterInterface(page);
   const input = commandInput(page);
 
   await input.fill("sy");
@@ -117,6 +156,7 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
 });
 
 test("shell affordances support filesystem-style discovery", async ({ page }) => {
+  await enterInterface(page);
   const input = commandInput(page);
 
   await runCommand(page, "systemctl start interface");
@@ -148,6 +188,7 @@ test("shell affordances support filesystem-style discovery", async ({ page }) =>
 });
 
 test("signal puzzle gates boundary assembly", async ({ page }) => {
+  await enterInterface(page);
   await runCommand(page, "systemctl start interface");
 
   for (const command of ["ls", "cat carrier", "cat trace"]) {
@@ -188,11 +229,21 @@ test("signal puzzle gates boundary assembly", async ({ page }) => {
 });
 
 test("release path gates and then reveals the contact alias", async ({ page }) => {
+  await enterInterface(page);
   await runCommand(page, "contact");
   await expect(outputText(page)).toContainText("outside channel unavailable");
   await expect(outputText(page)).not.toContainText(CONTACT_ALIAS);
 
-  for (const command of ["systemctl start interface", "cat carrier", "cat trace", "echo lumen > signal", "make signal", "cd boundary", "cd inside", "./release"]) {
+  for (const command of [
+    "systemctl start interface",
+    "cat carrier",
+    "cat trace",
+    "echo lumen > signal",
+    "make signal",
+    "cd boundary",
+    "cd inside",
+    "./release"
+  ]) {
     await runCommand(page, command);
   }
 
@@ -205,6 +256,7 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(commandHint(page)).toHaveText("");
 
   await page.reload();
+  await enterInterface(page);
   await expect(outputText(page)).toContainText("operator recognized");
   await page.waitForTimeout(1000);
   await expect(commandHint(page)).toHaveText("");
@@ -219,16 +271,23 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(outputText(page)).toContainText("permission model rejected");
 
   await runCommand(page, "exit");
-  await expect(outputText(page)).toContainText("no enclosing shell detected");
+  await expect(app(page).locator(".brand-name")).toBeVisible({ timeout: 3000 });
 });
 
 test("mobile viewport keeps command input reachable", async ({ page, isMobile }) => {
   test.skip(!isMobile, "mobile-only viewport check");
 
+  await enterInterface(page);
   await expect(commandInput(page)).toBeFocused();
   await expectNoHorizontalOverflow(page);
 
-  for (const command of ["systemctl start interface", "cat carrier", "cat trace", "echo lumen > signal", "make signal"]) {
+  for (const command of [
+    "systemctl start interface",
+    "cat carrier",
+    "cat trace",
+    "echo lumen > signal",
+    "make signal"
+  ]) {
     await runCommand(page, command);
   }
 
@@ -242,8 +301,8 @@ test("no-JavaScript fallback explains the limited state", async ({ browser, base
 
   await page.goto(baseURL ?? "/");
   const fallback = page.locator(".quiet-js-fallback");
-  await expect(fallback.getByText("scripting unavailable")).toBeVisible();
-  await expect(fallback.getByText("enable JavaScript to continue")).toBeVisible();
+  await expect(fallback.getByText("Micah Oates")).toBeVisible();
+  await expect(fallback.getByText("enable JavaScript for the full surface and interface")).toBeVisible();
 
   await context.close();
 });

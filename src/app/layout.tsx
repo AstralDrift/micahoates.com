@@ -1,9 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import Script from "next/script";
 import type { ReactNode } from "react";
 
 import { site } from "@/lib/site-content";
 
 import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap"
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-ibm-plex-mono",
+  display: "swap"
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -43,7 +58,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image.svg",
         width: 1200,
         height: 630,
-        alt: `${site.domain} quiet interface preview`
+        alt: `${site.name} — systems console preview`
       }
     ]
   },
@@ -83,13 +98,14 @@ const structuredData = {
     },
     {
       "@type": "CreativeWork",
-      "@id": `${site.url}/#quiet-interface`,
+      "@id": `${site.url}/#systems-surface`,
       name: site.title,
       url: site.url,
       creator: {
         "@id": `${site.url}/#person`
       },
-      description: "An interactive terminal-like interface with deterministic local commands and a hidden contact path.",
+      description:
+        "A brand-first personal site with selected work and a deeper keyboard interface for contact discovery.",
       isAccessibleForFree: true
     }
   ]
@@ -99,7 +115,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#03070c",
+  themeColor: "#0B0D10",
   colorScheme: "dark"
 };
 
@@ -109,14 +125,30 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}>
+      <head>
+        {process.env.NODE_ENV === "development" ? (
+          <>
+            <Script
+              src="//unpkg.com/react-grab/dist/index.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+            />
+            <Script
+              src="//unpkg.com/react-scan/dist/auto.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+            />
+          </>
+        ) : null}
+      </head>
       <body>
         <noscript
           dangerouslySetInnerHTML={{
             __html: "<style>.quiet-js-fallback{display:grid!important}.site-shell{display:none!important}</style>"
           }}
         />
-        <main className="quiet-noscript quiet-js-fallback" aria-label="Static system interface">
+        <main className="quiet-noscript quiet-js-fallback" aria-label="Static brand surface">
           <section className="quiet-terminal quiet-terminal-message">
             <div className="quiet-terminal-chrome" aria-hidden="true">
               <span>state</span>
@@ -124,11 +156,12 @@ export default function RootLayout({
               <span>!</span>
             </div>
             <div className="quiet-terminal-output">
-              <p className="quiet-line-muted">SYSTEM INTERFACE</p>
+              <p className="quiet-line-input">{site.name}</p>
               <br />
-              <p className="quiet-line-input">scripting unavailable</p>
-              <p className="quiet-line-default">operator channel requires client-side commands</p>
-              <p className="quiet-line-muted">enable JavaScript to continue</p>
+              <p className="quiet-line-default">{site.headline}</p>
+              <p className="quiet-line-muted">{site.support}</p>
+              <br />
+              <p className="quiet-line-muted">enable JavaScript for the full surface and interface</p>
             </div>
           </section>
         </main>
@@ -138,9 +171,7 @@ export default function RootLayout({
             __html: JSON.stringify(structuredData)
           }}
         />
-        <div className="site-shell">
-          {children}
-        </div>
+        <div className="site-shell">{children}</div>
       </body>
     </html>
   );

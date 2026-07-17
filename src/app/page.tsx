@@ -1,5 +1,5 @@
-import { QuietInterfaceExperience } from "@/components/QuietInterfaceExperience";
+import { HomeExperience } from "@/components/HomeExperience";
 
 export default function Home() {
-  return <QuietInterfaceExperience />;
+  return <HomeExperience />;
 }

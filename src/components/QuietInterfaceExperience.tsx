@@ -34,7 +34,11 @@ function isTypingTarget(target: EventTarget | null) {
   return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 }
 
-export function QuietInterfaceExperience() {
+type QuietInterfaceExperienceProps = {
+  onRequestExit?: () => void;
+};
+
+export function QuietInterfaceExperience({ onRequestExit }: QuietInterfaceExperienceProps) {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
   const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
@@ -87,6 +91,12 @@ export function QuietInterfaceExperience() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !paletteOpen && onRequestExit) {
+        event.preventDefault();
+        onRequestExit();
+        return;
+      }
+
       if (isTypingTarget(event.target)) {
         return;
       }
@@ -99,7 +109,7 @@ export function QuietInterfaceExperience() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, []);
+  }, [onRequestExit, paletteOpen]);
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -152,6 +162,13 @@ export function QuietInterfaceExperience() {
 
       const parsed = parseCommand(command);
 
+      if (parsed.command === "exit" && onRequestExit) {
+        emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
+        appendLines([{ text: `> ${command}`, tone: "input" }, { text: "returning to brand surface", tone: "muted" }]);
+        window.setTimeout(() => onRequestExit(), 120);
+        return;
+      }
+
       if (parsed.command === "clear") {
         emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
         setLines([]);
@@ -181,7 +198,7 @@ export function QuietInterfaceExperience() {
       setState(nextState);
       appendLines([{ text: `> ${command}`, tone: "input" }, ...result.output]);
     },
-    [appendLines, emitTerminalSignal, setRenderedLines, state]
+    [appendLines, emitTerminalSignal, onRequestExit, setRenderedLines, state]
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {

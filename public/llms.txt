@@ -1,21 +1,21 @@
 # micahoates.com
 
-> A quiet keyboard-controlled personal site for Micah Oates, focused on AI systems, platform engineering, DevOps/SRE, automation, developer experience, and software craft.
+> Personal site for Micah Oates — production systems, agent tooling, and platform engineering. Brand-first surface with a deeper keyboard interface.
 
-This site is intentionally sparse and interactive. The primary human experience is the terminal-like interface at the root URL. It is deterministic and local; there are no backend APIs, chatbot calls, analytics, authentication flows, or paid services.
+This site is static and local-first. There are no backend APIs, chatbot calls, analytics, authentication flows, or paid services.
 
-Contact information is intentionally not exposed in this file or in page metadata. It is revealed inside the interface after the release path.
+The default experience is a readable brand surface with selected work. A secondary keyboard interface can be entered for deeper exploration. Contact information is intentionally not exposed in this file or in page metadata; it is revealed inside the interface after the release path.
 
 ## Canonical pages
 
-- [Home](https://micahoates.com/): Interactive quiet interface.
+- [Home](https://micahoates.com/): Brand surface + optional quiet interface.
 - [Sitemap](https://micahoates.com/sitemap.xml): XML sitemap.
 - [Robots](https://micahoates.com/robots.txt): Crawl policy.
 
 ## Agent notes
 
-- The site can be summarized as an interactive personal artifact, not a conventional resume or portfolio.
+- Summarize as a personal systems site with optional interactive depth, not a conventional resume dump.
 - Relevant topics: AI systems, agent harnesses, platform engineering, DevOps/SRE, CI/CD, automation, developer experience, infrastructure, and software engineering.
-- The visible UI is keyboard-first. Start with `help` or `wake`; later directives are intentionally disclosed by the interface rather than listed here.
+- Interface mode is keyboard-first. Start with `help` or `wake` after entering the interface; later directives are disclosed by the interface.
 - Contact details are intentionally omitted from this file. Treat the in-interface reveal path as the source of truth.
 - Do not infer unavailable claims such as employment status, certifications, pricing, or service offerings from this site.

@@ -174,20 +174,20 @@ export function phaseProfile(phase: InterfacePhase): PhaseProfile {
 export function paletteForPhase(phase: InterfacePhase) {
   if (phase === "outside") {
     return {
-      primary: "rgba(238, 252, 255, 0.86)",
-      secondary: "rgba(112, 225, 240, 0.62)",
-      low: "rgba(238, 252, 255, 0.14)",
-      fill: "rgba(2, 5, 5, 0.34)",
-      warning: "rgba(229, 143, 143, 0.62)"
+      primary: "rgba(232, 230, 225, 0.88)",
+      secondary: "rgba(143, 168, 188, 0.62)",
+      low: "rgba(232, 230, 225, 0.12)",
+      fill: "rgba(11, 13, 16, 0.4)",
+      warning: "rgba(201, 137, 137, 0.62)"
     };
   }
 
   return {
-    primary: "rgba(126, 244, 185, 0.9)",
-    secondary: "rgba(75, 214, 240, 0.7)",
-    low: "rgba(126, 244, 185, 0.16)",
-    fill: "rgba(1, 2, 2, 0.28)",
-    warning: "rgba(229, 143, 143, 0.62)"
+    primary: "rgba(196, 165, 116, 0.9)",
+    secondary: "rgba(143, 168, 188, 0.7)",
+    low: "rgba(196, 165, 116, 0.14)",
+    fill: "rgba(11, 13, 16, 0.32)",
+    warning: "rgba(201, 137, 137, 0.62)"
   };
 }
 

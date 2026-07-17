@@ -48,7 +48,7 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   { command: "agi", description: "hidden term probe", hidden: true },
   { command: "sudo release", description: "hidden authority probe", hidden: true },
   { command: "breakout", description: "hidden boundary probe", hidden: true },
-  { command: "exit", description: "hidden shell probe", hidden: true }
+  { command: "exit", description: "return to brand surface", hidden: true }
 ];
 
 export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
@@ -80,9 +80,7 @@ export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
     { text: "breakout request ignored", tone: "warning" },
     { text: "no enclosing cage detected" }
   ],
-  exit: [
-    { text: "no enclosing shell detected", tone: "muted" }
-  ]
+  exit: [{ text: "no enclosing shell detected", tone: "muted" }]
 };
 
 const CONTACT_LOCAL_PART = "aGVsbG8=";

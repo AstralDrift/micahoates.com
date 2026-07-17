@@ -1,12 +1,12 @@
 {
-  "name": "System Interface | micahoates.com",
+  "name": "Micah Oates | micahoates.com",
   "short_name": "micahoates.com",
-  "description": "A quiet keyboard-controlled personal site for Micah Oates.",
+  "description": "Production systems, agent tooling, and platform engineering.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#020302",
-  "theme_color": "#020302",
+  "background_color": "#0B0D10",
+  "theme_color": "#0B0D10",
   "icons": [
     {
       "src": "/icon.svg",
