@@ -174,9 +174,9 @@ export function introLines(state: QuietInterfaceState): TerminalLine[] {
   }
 
   return [
-    { text: "surface / mounted read-only", tone: "muted" },
+    { text: "mount: /surface [ro]", tone: "muted" },
     { text: "interface.service: inactive", tone: "muted" },
-    { text: "keyboard channel ready" },
+    { text: "stdin: operator channel" },
     { text: "" }
   ];
 }

@@ -1,5 +1,4 @@
 import type { TerminalLine } from "@/lib/quiet-interface/state";
-import type { TraceNode } from "@/lib/world-state";
 
 export type CommandDefinition = {
   command: string;
@@ -52,7 +51,7 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   { command: "agi", description: "hidden term probe", hidden: true },
   { command: "sudo release", description: "hidden authority probe", hidden: true },
   { command: "breakout", description: "hidden boundary probe", hidden: true },
-  { command: "exit", description: "return to brand surface", hidden: true }
+  { command: "exit", description: "inspect the enclosing shell", hidden: true }
 ];
 
 export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
@@ -129,21 +128,6 @@ export function contactLines(): TerminalLine[] {
     { text: "outside record:", tone: "accent" },
     { text: "  name: micah oates" },
     { text: `  contact: ${contactAddress()}` },
-    { text: "  fields: platform / devops / software / ai systems" }
-  ];
-}
-
-export function chapterLines(node: TraceNode | null): TerminalLine[] {
-  if (!node) {
-    return [
-      { text: "channel opened from surface", tone: "muted" },
-      { text: "esc returns · ? for directives", tone: "muted" }
-    ];
-  }
-
-  return [
-    { text: `channel: ${node}`, tone: "accent" },
-    { text: "chapter hint only — hard gates remain", tone: "muted" },
-    { text: "esc returns · ? for directives", tone: "muted" }
+    { text: "  state: outside" }
   ];
 }

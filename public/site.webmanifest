@@ -1,12 +1,12 @@
 {
-  "name": "Micah Oates | micahoates.com",
+  "name": "System Interface | micahoates.com",
   "short_name": "micahoates.com",
-  "description": "Production systems, agent tooling, and platform engineering.",
+  "description": "A quiet, keyboard-first system interface.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0B0D10",
-  "theme_color": "#0B0D10",
+  "background_color": "#030806",
+  "theme_color": "#030806",
   "icons": [
     {
       "src": "/icon.svg",

@@ -3,7 +3,11 @@ import { expect, test } from "@playwright/test";
 import { parseCommand, runQuietCommand } from "../../src/lib/quiet-interface/commands";
 import { getVirtualEntry, listDirectoryLines } from "../../src/lib/quiet-interface/filesystem";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "../../src/lib/quiet-interface/session";
-import { createInitialState, type QuietInterfaceState } from "../../src/lib/quiet-interface/state";
+import {
+  createInitialState,
+  createReleasedState,
+  type QuietInterfaceState
+} from "../../src/lib/quiet-interface/state";
 
 function run(state: QuietInterfaceState, command: string) {
   return runQuietCommand(command, state).nextState;
@@ -117,6 +121,27 @@ test("session storage is best-effort", () => {
   );
   expect(() => persistQuietSession(unavailableStorage, releasedState)).not.toThrow();
   expect(() => clearQuietSession(unavailableStorage)).not.toThrow();
+});
+
+test("session storage records only the completed release", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem(key: string) {
+      return values.get(key) ?? null;
+    },
+    setItem(key: string, value: string) {
+      values.set(key, value);
+    },
+    removeItem(key: string) {
+      values.delete(key);
+    }
+  } as unknown as Storage;
+
+  persistQuietSession(storage, { ...createInitialState(), hasWoken: true, phase: "observation" });
+  expect(values.size).toBe(0);
+
+  persistQuietSession(storage, createReleasedState());
+  expect([...values.values()]).toEqual([JSON.stringify({ hasReleased: true, lastPhase: "outside" })]);
 });
 
 test("released namespace exposes one hidden route back to the surface", () => {

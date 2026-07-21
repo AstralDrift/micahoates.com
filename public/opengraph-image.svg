@@ -1,14 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">Micah Oates</title>
-  <desc id="desc">Systems console preview for micahoates.com.</desc>
-  <rect width="1200" height="630" fill="#0B0D10"/>
-  <g opacity="0.28" stroke="#2A2E35" stroke-width="1">
-    <path d="M96 96h1008M96 168h1008M96 240h1008M96 312h1008M96 384h1008M96 456h1008M96 528h1008"/>
-    <path d="M168 60v510M264 60v510M360 60v510M456 60v510M552 60v510M648 60v510M744 60v510M840 60v510M936 60v510M1032 60v510"/>
+  <title id="title">System Interface</title>
+  <desc id="desc">A sparse signal apparatus on a black system surface.</desc>
+  <rect width="1200" height="630" fill="#030806"/>
+  <g opacity="0.2" stroke="#153027" stroke-width="1">
+    <path d="M80 90h1040M80 162h1040M80 234h1040M80 306h1040M80 378h1040M80 450h1040M80 522h1040"/>
+    <path d="M152 54v522M248 54v522M344 54v522M440 54v522M536 54v522M632 54v522M728 54v522M824 54v522M920 54v522M1016 54v522"/>
   </g>
-  <circle cx="900" cy="300" r="140" fill="none" stroke="#8FA8BC" stroke-opacity="0.22" stroke-width="1"/>
-  <circle cx="900" cy="300" r="88" fill="none" stroke="#C4A574" stroke-opacity="0.28" stroke-width="1"/>
-  <text x="96" y="250" fill="#E8E6E1" font-family="system-ui, sans-serif" font-size="64" font-weight="500" letter-spacing="-1">Micah Oates</text>
-  <text x="96" y="320" fill="#C4A574" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28">production systems · agent tooling · platform</text>
-  <text x="96" y="500" fill="#9A9690" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">micahoates.com</text>
+  <path d="M104 420C280 420 302 216 484 286S712 468 860 268S1000 164 1094 220" fill="none" stroke="#76EFB6" stroke-opacity="0.22" stroke-width="2"/>
+  <g fill="#76EFB6">
+    <rect x="699" y="214" width="12" height="12" opacity="0.2"/><rect x="729" y="196" width="12" height="12" opacity="0.42"/><rect x="762" y="187" width="12" height="12" opacity="0.7"/><rect x="798" y="190" width="12" height="12" opacity="0.92"/><rect x="833" y="207" width="12" height="12" opacity="0.54"/>
+    <rect x="675" y="248" width="12" height="12" opacity="0.34"/><rect x="845" y="247" width="12" height="12" opacity="0.82"/><rect x="665" y="286" width="12" height="12" opacity="0.64"/><rect x="855" y="286" width="12" height="12" opacity="0.45"/>
+    <rect x="675" y="324" width="12" height="12" opacity="0.24"/><rect x="845" y="326" width="12" height="12" opacity="0.72"/><rect x="703" y="358" width="12" height="12" opacity="0.52"/><rect x="735" y="377" width="12" height="12" opacity="0.28"/><rect x="771" y="386" width="12" height="12" opacity="0.82"/><rect x="807" y="379" width="12" height="12" opacity="0.4"/>
+  </g>
+  <path d="M630 286h278M771 154v280" stroke="#8EB9C4" stroke-opacity="0.24" stroke-width="1"/>
+  <text x="88" y="112" fill="#67736C" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20">interface.service</text>
+  <text x="88" y="520" fill="#A9B3AD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">micahoates.com</text>
+  <rect x="88" y="548" width="192" height="2" fill="#76EFB6" opacity="0.48"/>
 </svg>

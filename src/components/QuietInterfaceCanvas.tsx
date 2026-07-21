@@ -220,7 +220,7 @@ export function QuietInterfaceCanvas({
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      context.fillStyle = "#020302";
+      context.fillStyle = "#030806";
       context.fillRect(0, 0, width, height);
       buildField();
     };
@@ -822,7 +822,7 @@ export function QuietInterfaceCanvas({
 
       const state = runtimeRef.current;
       const palette = paletteForPhase(state.phase);
-      context.fillStyle = reducedMotion ? "#020403" : palette.fill;
+      context.fillStyle = reducedMotion ? "#030806" : palette.fill;
       context.fillRect(0, 0, width, height);
 
       drawBaseField();

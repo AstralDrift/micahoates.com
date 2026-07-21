@@ -43,7 +43,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image.svg",
         width: 1200,
         height: 630,
-        alt: `${site.name} — systems console preview`
+        alt: "A sparse signal apparatus on a black system surface"
       }
     ]
   },
@@ -78,8 +78,7 @@ const structuredData = {
       "@id": `${site.url}/#person`,
       name: site.name,
       url: site.url,
-      sameAs: [site.githubUrl],
-      knowsAbout: site.keywords.filter((keyword) => keyword !== site.name && keyword !== "interactive personal website")
+      description: "Author of the system interface at micahoates.com."
     },
     {
       "@type": "CreativeWork",
@@ -89,8 +88,7 @@ const structuredData = {
       creator: {
         "@id": `${site.url}/#person`
       },
-      description:
-        "A brand-first personal site with selected work and a deeper keyboard interface for contact discovery.",
+      description: "A deterministic keyboard interface built as an interactive atmospheric artifact.",
       isAccessibleForFree: true
     }
   ]
@@ -100,7 +98,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#0B0D10",
+  themeColor: "#030806",
   colorScheme: "dark"
 };
 
@@ -117,7 +115,7 @@ export default function RootLayout({
             __html: "<style>.quiet-js-fallback{display:grid!important}.site-shell{display:none!important}</style>"
           }}
         />
-        <main className="quiet-noscript quiet-js-fallback" aria-label="Static brand surface">
+        <main className="quiet-noscript quiet-js-fallback" aria-label="Static system interface">
           <section className="quiet-terminal quiet-terminal-message">
             <div className="quiet-terminal-chrome" aria-hidden="true">
               <span>state</span>
@@ -125,12 +123,10 @@ export default function RootLayout({
               <span>!</span>
             </div>
             <div className="quiet-terminal-output">
-              <p className="quiet-line-input">{site.name}</p>
+              <p className="quiet-line-input">operator channel unavailable</p>
+              <p className="quiet-line-default">the interface requires a local JavaScript runtime</p>
               <br />
-              <p className="quiet-line-default">{site.headline}</p>
-              <p className="quiet-line-muted">{site.support}</p>
-              <br />
-              <p className="quiet-line-muted">enable JavaScript for the full surface and interface</p>
+              <p className="quiet-line-muted">no fallback transcript was provided</p>
             </div>
           </section>
         </main>

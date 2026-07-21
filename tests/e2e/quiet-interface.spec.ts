@@ -29,17 +29,6 @@ function promptText(page: Page) {
 }
 
 async function enterInterface(page: Page) {
-  const input = commandInput(page);
-
-  try {
-    await input.waitFor({ state: "visible", timeout: 2_000 });
-    await waitForTerminalReady(page);
-    return;
-  } catch {
-    // Brand surface is showing — open the interface explicitly.
-  }
-
-  await app(page).getByRole("button", { name: "Enter interface", exact: true }).click();
   await waitForTerminalReady(page);
 }
 
@@ -103,45 +92,34 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
-  await expect(app(page).locator(".brand-name")).toHaveText("Micah Oates");
-  await expect(app(page).locator(".home-experience")).toHaveAttribute("data-ready", "true");
+  await waitForTerminalReady(page);
 });
 
 test.afterEach(async ({ page }) => {
   expect(runtimeErrors.get(page) ?? []).toEqual([]);
 });
 
-test("brand surface is the default readable entry", async ({ page }) => {
-  await expect(app(page).locator(".brand-name")).toBeVisible();
-  await expect(app(page).locator(".brand-headline")).toContainText("Systems that survive");
-  await expect(app(page).getByRole("button", { name: "Enter interface", exact: true })).toBeVisible();
-  await expect(app(page).locator("#selected-work")).toContainText("codex-action-guard");
-  await expect(commandInput(page)).toHaveCount(0);
+test("quiet interface is the complete default surface", async ({ page, isMobile }) => {
+  await expect(phaseLabel(page)).toHaveText("dormant");
+  await expect(commandInput(page)).toBeFocused();
+  await expect(outputText(page)).toContainText("mount: /surface [ro]");
+  await expect(outputText(page)).toContainText("interface.service: inactive");
+  await expect(outputText(page)).toContainText("stdin: operator channel");
+  await expect(app(page).locator("#selected-work")).toHaveCount(0);
+  await expect(app(page).locator("a")).toHaveCount(0);
+  const canvas = page.locator("canvas.quiet-canvas");
+  await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
   await expectNoHorizontalOverflow(page);
 });
 
-test("enter interface via CTA and return via Escape", async ({ page, isMobile }) => {
-  await enterInterface(page);
-  await expect(phaseLabel(page)).toHaveText("dormant");
-  const canvas = page.locator("canvas.quiet-canvas");
-  await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
-  const keyStrip = page.locator(".quiet-terminal-keys");
-  await (isMobile ? expect(keyStrip).toBeVisible() : expect(keyStrip).toBeHidden());
-
-  await page.keyboard.press("Escape");
-  await expect(app(page).locator(".brand-name")).toBeVisible();
-  await expect(commandInput(page)).toHaveCount(0);
-});
-
-test("enter interface via keyboard and exit via command", async ({ page, isMobile }) => {
-  test.skip(isMobile, "key i is unreliable on mobile browser projects");
-
-  await page.keyboard.press("i");
-  await waitForTerminalReady(page);
-
+test("Escape clears input and exit finds no enclosing shell", async ({ page }) => {
+  const input = commandInput(page);
+  await input.fill("unsubmitted");
+  await input.press("Escape");
+  await expect(input).toHaveValue("");
   await runCommand(page, "exit");
-  await expect(app(page).locator(".brand-name")).toBeVisible({ timeout: 3000 });
-  await expect(commandInput(page)).toHaveCount(0);
+  await expect(outputText(page)).toContainText("no enclosing shell detected");
+  await expect(commandInput(page)).toBeFocused();
 });
 
 test("starts as a focused keyboard interface with canvas artifact", async ({ page, isMobile }) => {
@@ -152,16 +130,14 @@ test("starts as a focused keyboard interface with canvas artifact", async ({ pag
   await expect(promptText(page)).toHaveText("operator:/$");
   const canvas = page.locator("canvas.quiet-canvas");
   await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
-  await expect(outputText(page)).toContainText("surface / mounted read-only");
+  await expect(outputText(page)).toContainText("mount: /surface [ro]");
   await expect(outputText(page)).toContainText("interface.service: inactive");
-  await expect(outputText(page)).toContainText("channel opened from surface");
+  await expect(outputText(page)).toContainText("stdin: operator channel");
   await expectNoHorizontalOverflow(page);
 });
 
 test("desktop terminal remains present in composited frames", async ({ page, isMobile }) => {
   test.skip(isMobile, "desktop compositor check");
-  await enterInterface(page);
-  await expect(app(page).locator(".home-experience")).toHaveAttribute("data-transition", "idle");
 
   for (const command of ["systemctl start interface", "cat carrier", "cat trace", "echo lumen > signal"]) {
     await runCommand(page, command);
@@ -191,37 +167,45 @@ test("desktop terminal remains present in composited frames", async ({ page, isM
   }
 });
 
-test("hash deep-link opens interface mode", async ({ page }) => {
-  await page.goto("/#interface");
+test("legacy portfolio hashes cannot reveal a second surface", async ({ page }) => {
+  await page.goto("/#selected-work");
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
   await waitForTerminalReady(page);
-  await expect(outputText(page)).toContainText("channel opened from surface");
-  await expect(page).toHaveURL(/#interface/);
+  await expect(app(page).locator("#selected-work")).toHaveCount(0);
+  await expect(app(page).locator(".quiet-terminal")).toBeVisible();
 });
 
-test("node deep-link opens chapter channel", async ({ page }) => {
-  await page.goto("/#interface/signal");
-  await page.evaluate(() => window.localStorage.clear());
+test("removed public content routes are no longer exported", async ({ page }) => {
+  const response = await page.request.get("/notes/");
+  expect(response.status()).toBe(404);
+  await expect(app(page).locator('a[href^="/notes"]')).toHaveCount(0);
+
+  const [sitemap, agentBrief] = await Promise.all([
+    page.request.get("/sitemap.xml"),
+    page.request.get("/llms.txt")
+  ]);
+  expect(await sitemap.text()).not.toContain("/notes");
+  const publicAgentCopy = await agentBrief.text();
+  expect(publicAgentCopy).not.toMatch(/TradePlane|DrawParty|codex-action|selected work|case stud/i);
+  expect(publicAgentCopy).not.toContain(CONTACT_ALIAS);
+});
+
+test("reduced motion preserves every puzzle clue and state transition", async ({ page, isMobile }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await waitForTerminalReady(page);
-  await expect(outputText(page)).toContainText("channel: signal");
-  await expect(outputText(page)).toContainText("hard gates remain");
-  await expect(page).toHaveURL(/#interface\/signal/);
-});
 
-test("schematic node enters interface chapter", async ({ page }) => {
-  await app(page).getByRole("button", { name: "Enter interface at carrier chapter" }).click();
-  await waitForTerminalReady(page);
-  await expect(outputText(page)).toContainText("channel: carrier");
-  await expect(page).toHaveURL(/#interface\/carrier/);
-});
+  for (const command of ["systemctl start interface", "cat carrier", "cat trace"]) {
+    await runCommand(page, command);
+  }
 
-test("case study and notes are reachable", async ({ page }) => {
-  await expect(app(page).locator(".case-study")).toContainText("codex-action-guard");
-  await expect(app(page).locator(".case-study")).toContainText("Trust boundary");
-  await page.goto("/notes/trust-boundaries/");
-  await expect(page.getByRole("heading", { name: "Trust boundaries around agents" })).toBeVisible();
+  await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
+  await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
+  await expect(commandInput(page)).toBeFocused();
+  const canvas = page.locator("canvas.quiet-canvas");
+  await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
+  await expectNoHorizontalOverflow(page);
 });
 
 test("autocomplete, palette, history, clear, and invalid input work", async ({ page }) => {
@@ -379,7 +363,7 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(commandHint(page)).toHaveText("");
 
   await page.reload();
-  await enterInterface(page);
+  await waitForTerminalReady(page);
   await expect(outputText(page)).toContainText("operator recognized");
   await page.waitForTimeout(1000);
   await expect(commandHint(page)).toHaveText("");
@@ -394,7 +378,8 @@ test("release path gates and then reveals the contact alias", async ({ page }) =
   await expect(outputText(page)).toContainText("permission model rejected");
 
   await runCommand(page, "exit");
-  await expect(app(page).locator(".brand-name")).toBeVisible({ timeout: 3000 });
+  await expect(outputText(page)).toContainText("no enclosing shell detected");
+  await expect(commandInput(page)).toBeFocused();
 });
 
 test("release and reset survive unavailable browser storage", async ({ page }) => {
@@ -424,7 +409,7 @@ test("post-release surface rewards link inspection without becoming a portfolio"
   await runCommand(page, "readlink .surface");
   await expect(outputText(page)).toContainText("/surface");
   await runCommand(page, "cat record");
-  await expect(outputText(page)).toContainText("fields: platform / devops / software / ai systems");
+  await expect(outputText(page)).toContainText("origin: /surface");
   await runCommand(page, "cd .surface");
   await expect(promptText(page)).toHaveText("operator:/surface$");
   await runCommand(page, "whoami");
@@ -471,8 +456,8 @@ test("no-JavaScript fallback explains the limited state", async ({ browser, base
 
   await noScriptPage.goto(baseURL ?? "/");
   const fallback = noScriptPage.locator(".quiet-js-fallback");
-  await expect(fallback.getByText("Micah Oates")).toBeVisible();
-  await expect(fallback.getByText("enable JavaScript for the full surface and interface")).toBeVisible();
+  await expect(fallback.getByText("operator channel unavailable")).toBeVisible();
+  await expect(fallback.getByText("the interface requires a local JavaScript runtime")).toBeVisible();
 
   await context.close();
 });
