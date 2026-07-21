@@ -1,153 +1,142 @@
-# Quiet Interface Design System
+# micahoates.com Design System
 
 ## 1. Atmosphere & Identity
 
-The interface feels like a precise instrument discovered in a dark room: quiet at rest, legible under pressure, and more revealing as the operator forms a correct mental model. Its signature is the signal relay, one state expressed twice through a textual shell and a procedural apparatus. Neither surface decorates the other; commands, files, paths, and visual geometry must agree.
+An industrial command surface — precise, quiet authority, instrument clarity. The site feels like a calibrated operating console, not a marketing landing page and not a neon hacker terminal.
+
+The signature is an asymmetric brand stage: oversized name on the left, a drawn signal schematic on the right whose nodes are chapter entries into the quiet interface. Progress lights the schematic. A morph transition connects brand and terminal. Case study + notes carry substance.
 
 ## 2. Color
 
 ### Palette
 
-| Role | Token | Value | Usage |
-| --- | --- | --- | --- |
-| Surface/void | `--color-void` | `#020403` | Page and canvas base |
-| Surface/terminal | `--color-terminal` | `#030806` | Opaque terminal operating surface |
-| Surface/terminal-soft | `--color-terminal-soft` | `#030707` | Released and reduced surfaces |
-| Text/primary | `--color-text` | `#e8f0ea` | Commands and primary output |
-| Text/secondary | `--color-soft` | `#a3b0a6` | Standard command output |
-| Text/muted | `--color-muted` | `#728078` | Labels, hints, dormant content |
-| Rule/subtle | `--color-rule` | `rgba(190, 220, 204, 0.12)` | Dividers and registration marks |
-| Rule/active | `--color-rule-active` | `rgba(118, 239, 182, 0.32)` | Focused terminal edge and active geometry |
-| Signal/green | `--color-signal` | `#76efb6` | Valid actions, prompt, active state |
-| Signal/cyan | `--color-carrier` | `#67dff3` | Carrier paths, outside state, secondary signal |
-| Status/warning | `--color-warning` | `#e1c97e` | Recoverable, gated input |
-| Status/error | `--color-error` | `#dc8d88` | Invalid command or signal |
-| Outside/white | `--color-outside` | `#eefcff` | Released identity and final line |
+| Role | Token | Light | Dark | Usage |
+|------|-------|-------|------|-------|
+| Surface/primary | --surface-primary | — | #0B0D10 | Main background |
+| Surface/secondary | --surface-secondary | — | #12151A | Brand panels, work section |
+| Surface/elevated | --surface-elevated | — | #181C22 | Terminal panel, palette |
+| Text/primary | --text-primary | — | #E8E6E1 | Brand, body, terminal input |
+| Text/secondary | --text-secondary | — | #9A9690 | Supporting copy |
+| Text/tertiary | --text-tertiary | — | #5F5C57 | Labels, hints, chrome |
+| Border/default | --border-default | — | #2A2E35 | Dividers, instrument rules |
+| Border/subtle | --border-subtle | — | #1C2026 | Soft separations |
+| Accent/primary | --accent-primary | — | #C4A574 | CTAs, focus, terminal accent |
+| Accent/hover | --accent-hover | — | #D4B888 | Hover / active accent |
+| Accent/steel | --accent-steel | — | #8FA8BC | Secondary instrument signal |
+| Status/warning | --status-warning | — | #C9A66B | Caution lines |
+| Status/error | --status-error | — | #C98989 | Errors |
+
+Legacy aliases (quiet interface): `--bg` = surface-primary, `--text` = text-primary, `--muted` = text-tertiary, `--soft` = text-secondary, `--green` = accent-primary, `--cyan` = accent-steel, `--warn` = status-warning, `--error` = status-error, `--line` / `--line-strong` derived from borders/accent.
 
 ### Rules
-
-- The page stays near-black; color appears only as state evidence.
-- Green means a valid local operation. Cyan means carrier, connection, or outside state.
-- Warning and error colors are brief and never used as ambient decoration.
-- Puzzle information is never encoded by color alone.
-- New colors must be added here before use.
+- Site is dark by design (systems console). Do not invent a light theme.
+- Accent is for interactive elements and terminal signal only — not decorative glow soup.
+- No CRT neon green as identity. No purple gradients.
 
 ## 3. Typography
 
 ### Scale
 
-| Level | Size | Weight | Line height | Tracking | Usage |
-| --- | --- | --- | --- | --- | --- |
-| Terminal/primary | `0.9375rem` | 400 | 1.64 | 0 | Commands and output |
-| Terminal/compact | `0.8125rem` | 400 | 1.56 | 0 | Mobile output |
-| Label | `0.75rem` | 500 | 1.4 | 0 | Chrome, hints, key labels |
-| Final | `1.0625rem` | 500 | 1.56 | 0 | Release statement |
+| Level | Size | Weight | Line Height | Tracking | Usage |
+|-------|------|--------|-------------|----------|-------|
+| Display | clamp(2.75rem, 7vw, 5rem) | 500 | 1.05 | -0.03em | Brand name |
+| H1 | clamp(1.5rem, 3vw, 2rem) | 500 | 1.2 | -0.02em | Hero headline |
+| H2 | 1.25rem | 500 | 1.3 | -0.01em | Section headers |
+| Body/lg | 1.125rem | 400 | 1.55 | 0 | Hero supporting line |
+| Body | 1rem | 400 | 1.55 | 0 | Default |
+| Body/sm | 0.875rem | 400 | 1.5 | 0.01em | Work descriptions |
+| Caption | 0.75rem | 500 | 1.4 | 0.06em | Instrument labels (mono) |
+| Overline | 0.6875rem | 500 | 1.3 | 0.12em | Section overlines (mono, uppercase) |
 
-### Font stack
-
-- Mono: `Berkeley Mono`, `IBM Plex Mono`, `SFMono-Regular`, `SF Mono`, `JetBrains Mono`, `Fira Code`, `Consolas`, `Liberation Mono`, `Menlo`, `monospace`.
-- No external font request is allowed. The site must render well using the system fallbacks.
+### Font Stack
+- Primary (display/body): Syne via `next/font`
+- Mono (instruments/terminal): IBM Plex Mono via `next/font`
 
 ### Rules
-
-- The interface uses one monospace family to preserve the operating-surface metaphor.
-- Letter spacing is always `0`.
-- Mobile text remains at least 13px; the editable input remains 16px to prevent browser zoom.
-- Output wraps as text. Command tables adapt into stacked rows rather than relying on fixed columns.
+- Max 2 families.
+- Brand name uses display scale; never smaller than the headline.
+- Terminal chrome and overlines use mono.
 
 ## 4. Spacing & Layout
 
-### Base unit
-
-All layout spacing derives from 4px.
+### Base Unit
+All spacing derives from a base of **4px**.
 
 | Token | Value | Usage |
-| --- | --- | --- |
-| `--space-1` | `0.25rem` | Tight inline separation |
-| `--space-2` | `0.5rem` | Compact rows |
-| `--space-3` | `0.75rem` | Prompt and output rhythm |
-| `--space-4` | `1rem` | Standard terminal inset |
-| `--space-5` | `1.25rem` | Comfortable separation |
-| `--space-6` | `1.5rem` | Desktop terminal inset |
-| `--space-8` | `2rem` | Major local separation |
-| `--space-12` | `3rem` | Page framing |
-| `--space-16` | `4rem` | Wide desktop framing |
+|-------|-------|-------|
+| --space-1 | 4px | Tight |
+| --space-2 | 8px | Compact |
+| --space-3 | 12px | Default compact |
+| --space-4 | 16px | Standard |
+| --space-5 | 20px | Comfortable |
+| --space-6 | 24px | Group padding |
+| --space-8 | 32px | Between groups |
+| --space-10 | 40px | Section inner |
+| --space-12 | 48px | Section breaks |
+| --space-16 | 64px | Page rhythm |
+| --space-20 | 80px | Hero padding |
+| --space-24 | 96px | Major separation |
 
 ### Grid
-
-- Desktop uses a constrained two-zone composition: a 36-42rem terminal left of center and a flexible apparatus field to the right.
-- Tablet lets the apparatus overlap the terminal's negative space but never its readable text.
-- Mobile uses one full-height terminal surface; the apparatus recedes behind the outer frame instead of competing with text.
-- The terminal fill remains opaque so the animated canvas cannot destabilize glyph compositing.
-- The terminal owns a compositor layer so canvas updates cannot drop or smear text glyphs.
-- The minimum page height uses dynamic viewport units and safe-area insets.
-- The command form remains visible when the visual viewport is reduced by a software keyboard.
+- Max content width: 72rem (1152px)
+- Breakpoints: sm 640px, md 768px, lg 1024px
+- Brand hero: full viewport height, edge-to-edge atmosphere
+- Work section: single column instrument list, max-width 42rem
 
 ### Rules
-
-- Empty space is structural. It is not filled with labels, metrics, or panels.
-- Terminal copy targets a readable width near 68 monospace characters.
-- Fixed-format elements use stable tracks so state changes do not shift the layout.
+- No card grids in the hero.
+- Work entries are rows separated by hairline rules, not cards.
 
 ## 5. Components
 
-### Quiet terminal
+### BrandSurface
+- **Structure**: full-bleed atmosphere + brand + headline + support + CTA group
+- **States**: default; CTAs have hover/focus/active
+- **Accessibility**: landmark `header`/`main`; CTAs are real buttons/links with visible focus
+- **Motion**: atmosphere idle (opacity/transform only); reduced-motion freezes idle
 
-- **Structure**: semantic `section`, compact state rail, scrollable DOM transcript, live announcement region, command form.
-- **Variants**: dormant, active, inside, outside, system message.
-- **Spacing**: `--space-3`, `--space-4`, `--space-6`, and `--space-8`.
-- **States**: focused, composing, valid submission, gated command, error, released.
-- **Accessibility**: labelled input, visible focus, independent polite announcements, focus restoration after overlays.
-- **Motion**: new transcript groups enter through opacity and a short vertical transform.
+### SelectedWork
+- **Structure**: overline + heading + list of work rows (name, blurb, optional external link)
+- **States**: row hover/focus shifts border accent
+- **Accessibility**: list semantics; links have clear names
+- **Motion**: micro border/color transition (150–200ms)
 
-### Signal apparatus
+### QuietTerminal (interface mode)
+- **Structure**: chrome + scrollback + command form; palette overlay
+- **States**: phase chrome; line tones; focus on input
+- **Accessibility**: keyboard-first; `aria-live` for output; Esc exits to brand when nested
+- **Motion**: mode crossfade only; canvas remains decorative
 
-- **Structure**: decorative DPR-aware Canvas 2D field with a stable five-node relay and central aperture.
-- **Variants**: dormant, observation, assembly, boundary, inside, outside.
-- **States**: idle, typing, submit, inspect, valid, invalid, transition, release.
-- **Accessibility**: `aria-hidden`; every clue and state also appears in DOM text.
-- **Motion**: deterministic seeded movement, visibility suspension, reduced-motion static compositions.
-
-### Directive index
-
-- **Structure**: small modal directive list with command, description, and shortcut.
-- **States**: open, selected, focused, empty.
-- **Accessibility**: arrow navigation, unique-letter selection, Enter to run, Escape to close, focus restored to the terminal.
-- **Motion**: opacity and small transform only.
-
-### Mobile key strip
-
-- **Structure**: five compact terminal keys for Tab, history up/down, palette, and Enter.
-- **States**: default, pressed, focused.
-- **Accessibility**: native buttons with explicit labels and 40px minimum touch targets.
-- **Motion**: pressed opacity and transform only.
+### ModeShell (HomeExperience)
+- **Variants**: `brand` | `interface`
+- **Keyboard**: `i` enters interface from brand (when not typing); Esc returns from interface
+- **Motion**: emphasis crossfade 400–500ms; reduced-motion instant swap
 
 ## 6. Motion & Interaction
 
 ### Timing
 
-| Type | Token | Duration | Easing | Usage |
-| --- | --- | --- | --- | --- |
-| Micro | `--motion-micro` | `120ms` | `ease-out` | Key press, focus response |
-| Standard | `--motion-standard` | `220ms` | `ease-out` | Transcript and palette entry |
-| Emphasis | `--motion-emphasis` | `560ms` | `cubic-bezier(0.16, 1, 0.3, 1)` | Boundary and release transitions |
+| Type | Duration | Easing | Usage |
+|------|----------|--------|-------|
+| Micro | 120ms | ease-out | CTA press, work row |
+| Standard | 240ms | ease-in-out | Focus rings, border accents |
+| Emphasis | 480ms | cubic-bezier(0.16, 1, 0.3, 1) | Brand ↔ interface mode |
+| Atmosphere | 12s loop | linear | Hero field drift (decorative) |
 
 ### Rules
-
-- DOM motion uses only opacity and transform.
-- Typing creates low-amplitude packets; submission creates one decisive pulse.
-- Repeated commands retrigger their visual response.
-- Invalid input shears briefly, settles quickly, and never flashes the full screen.
-- Reduced motion renders every phase as a distinct stable composition at a low refresh rate.
-- The canvas pauses while the document is hidden.
+- Animate only `transform` and `opacity` (borders/colors for micro UI states allowed).
+- Respect `prefers-reduced-motion`.
+- Budget: atmosphere idle, work-row hover, mode transition — nothing else decorative.
 
 ## 7. Depth & Surface
 
-### Strategy: borders only
-
-The terminal is defined by tonal fill, one active edge, sparse registration corners, and hairline rules. It has no card shadow and no floating-panel treatment. The apparatus creates depth through density, occlusion, and luminance rather than CSS elevation.
+### Strategy
+**borders-only** with subtle tonal shifts. No multi-layer shadows, no glow stacks.
 
 | Type | Value | Usage |
-| --- | --- | --- |
-| Subtle rule | `1px solid var(--color-rule)` | Transcript divider, palette rows |
-| Active rule | `1px solid var(--color-rule-active)` | Focused edge, selected directive |
+|------|-------|-------|
+| Default | 1px solid var(--border-default) | Work rules, terminal edge |
+| Subtle | 1px solid var(--border-subtle) | Soft separations |
+| Accent edge | 1px solid var(--accent-primary) | Active terminal / focus |
+
+Terminal panel uses a single left accent rule + tonal fill. No drop-shadow haze.

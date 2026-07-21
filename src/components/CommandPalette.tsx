@@ -146,7 +146,7 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
               }}
               type="button"
               data-selected={index === safeSelectedIndex}
-              onMouseEnter={() => setSelectedIndex(index)}
+              onPointerMove={() => setSelectedIndex(index)}
               onClick={() => run(definition.command)}
             >
               <span className="quiet-palette-command">

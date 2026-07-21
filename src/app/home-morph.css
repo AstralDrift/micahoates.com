@@ -1,0 +1,113 @@
+/* —— Home morph / layer transitions —— */
+/* Timing defaults; HomeExperience may override --morph-enter-ms / --morph-exit-ms inline */
+
+.home-experience {
+  --morph-enter-ms: 720;
+  --morph-exit-ms: 480;
+  position: relative;
+  min-height: 100svh;
+}
+
+.home-experience[data-mode="interface"] {
+  overflow: hidden;
+  height: 100svh;
+}
+
+.home-brand-layer,
+.home-interface-layer {
+  opacity: 1;
+  transition:
+    opacity calc(var(--morph-exit-ms) * 1ms) cubic-bezier(0.16, 1, 0.3, 1),
+    transform calc(var(--morph-enter-ms) * 1ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-experience[data-transition="entering"] .home-brand-layer .brand-copy,
+.home-experience[data-transition="entering"] .home-brand-layer .brand-rail {
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
+}
+
+.home-experience[data-transition="entering"] .home-brand-layer .brand-stage {
+  transform: translate3d(-18vw, 4vh, 0) scale(0.72);
+  transition: transform calc(var(--morph-enter-ms) * 1ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-experience[data-transition="entering"] .home-interface-layer {
+  opacity: 0;
+  animation: morph-interface-in calc(var(--morph-enter-ms) * 1ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.home-experience[data-transition="exiting"] .home-interface-layer {
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.home-experience[data-transition="exiting"] .home-brand-layer .brand-stage {
+  animation: morph-schematic-back calc(var(--morph-exit-ms) * 1ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes morph-interface-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(12px, 8px, 0) scale(0.98);
+  }
+  55% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes morph-schematic-back {
+  from {
+    transform: translate3d(-12vw, 2vh, 0) scale(0.85);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .home-experience[data-transition="entering"] .home-brand-layer .brand-stage {
+    transform: translate3d(0, -6vh, 0) scale(0.88);
+  }
+}
+
+.home-brand-layer[data-active="false"] {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.home-interface-layer[data-active="false"] {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.home-interface-layer[data-active="true"] {
+  position: relative;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-experience[data-transition="entering"] .home-brand-layer .brand-stage,
+  .home-experience[data-transition="entering"] .home-interface-layer,
+  .home-experience[data-transition="exiting"] .home-brand-layer .brand-stage {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

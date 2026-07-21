@@ -1,6 +1,6 @@
-# Quiet Interface
+# micahoates.com
 
-A static, keyboard-first web artifact built as a quiet operating surface rather than a conventional homepage.
+A static personal site: brand-first systems surface with a deeper keyboard interface.
 
 ## Local Setup
 
@@ -23,7 +23,7 @@ npm run smoketest
 
 `npm run build` creates the static export in `out/`.
 
-`npm run smoketest` runs the browser-level keyboard and mobile smoke suite.
+`npm run smoketest` runs the browser-level brand + interface smoke suite.
 
 ## Deployment
 
@@ -45,6 +45,7 @@ The static export includes:
 ## Notes
 
 - No backend, database, auth, analytics, or paid API is required.
-- The primary interaction is deterministic and local.
+- Default view is the brand surface (name, pitch, selected work).
+- The quiet interface is a secondary mode (CTA or `i`); Esc / `exit` returns to brand.
 - Contact is revealed only through the in-interface path and should use a domain-scoped alias, not a primary mailbox.
-- Keep the public surface sparse; do not add resume sections, project cards, social feeds, or visible contact forms without an explicit product decision.
+- Design tokens live in `DESIGN.md`. Do not reintroduce CRT neon-green identity.

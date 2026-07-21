@@ -11,10 +11,20 @@ import {
   type RenderedTerminalLine,
   type TerminalAnchor
 } from "@/components/QuietTerminal";
-import { availableCommands, commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, shellPrompt } from "@/lib/quiet-interface/commands";
+import { isTypingTarget } from "@/lib/dom";
+import {
+  availableCommands,
+  commandSuggestions,
+  parseCommand,
+  pathSuggestions,
+  runQuietCommand,
+  shellPrompt
+} from "@/lib/quiet-interface/commands";
+import { chapterLines } from "@/lib/quiet-interface/copy";
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
 import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
+import { progressFromState, type TraceNode, type TraceProgress } from "@/lib/world-state";
 
 const INITIAL_RENDERED_LINES: RenderedTerminalLine[] = introLines(createInitialState()).map((line, index) => ({
   id: `line-${index + 1}`,
@@ -31,18 +41,23 @@ type QuietInterfaceStyle = CSSProperties & {
   "--keyboard-inset": string;
 };
 
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
+type QuietInterfaceExperienceProps = {
+  onRequestExit?: () => void;
+  entryNode?: TraceNode | null;
+  onProgress?: (progress: TraceProgress) => void;
+};
 
-  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-}
-
-export function QuietInterfaceExperience() {
+export function QuietInterfaceExperience({
+  onRequestExit,
+  entryNode = null,
+  onProgress
+}: QuietInterfaceExperienceProps) {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
   const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
   const visualEventCounterRef = useRef(0);
+  const entryNodeRef = useRef(entryNode);
+  const onRequestExitRef = useRef(onRequestExit);
+  const onProgressRef = useRef(onProgress);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
   const [lines, setLines] = useState<RenderedTerminalLine[]>(() => INITIAL_RENDERED_LINES);
   const [announcement, setAnnouncement] = useState("");
@@ -71,6 +86,13 @@ export function QuietInterfaceExperience() {
     [makeLine]
   );
 
+  const setRenderedLinesRef = useRef(setRenderedLines);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+    setRenderedLinesRef.current = setRenderedLines;
+  }, [onProgress, setRenderedLines]);
+
   const appendLines = useCallback(
     (nextLines: TerminalLine[]) => {
       setLines((current) => [...current, ...nextLines.map(makeLine)].slice(-240));
@@ -86,17 +108,33 @@ export function QuietInterfaceExperience() {
     });
   }, []);
 
+  const reportProgress = useCallback((nextState: QuietInterfaceState) => {
+    onProgressRef.current?.(progressFromState(nextState));
+  }, []);
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const restoredState = restoreQuietSession(window.localStorage);
       setState(restoredState);
-      setRenderedLines(introLines(restoredState));
+      const channel =
+        onRequestExitRef.current != null ? chapterLines(entryNodeRef.current ?? null) : [];
+      setRenderedLinesRef.current([...introLines(restoredState), ...channel]);
+      onProgressRef.current?.(progressFromState(restoredState));
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [setRenderedLines]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !paletteOpen && onRequestExit) {
+        if (event.target instanceof HTMLInputElement && event.target.value.length > 0) {
+          return;
+        }
+        event.preventDefault();
+        onRequestExit();
+        return;
+      }
+
       if (isTypingTarget(event.target)) {
         return;
       }
@@ -109,7 +147,7 @@ export function QuietInterfaceExperience() {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, []);
+  }, [onRequestExit, paletteOpen]);
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -189,6 +227,13 @@ export function QuietInterfaceExperience() {
 
       const parsed = parseCommand(command);
 
+      if (parsed.command === "exit" && onRequestExit) {
+        emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
+        appendLines([{ text: `> ${command}`, tone: "input" }, { text: "returning to brand surface", tone: "muted" }]);
+        window.setTimeout(() => onRequestExit(), 120);
+        return;
+      }
+
       if (parsed.command === "clear") {
         emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
         setState((current) => ({
@@ -227,10 +272,12 @@ export function QuietInterfaceExperience() {
         clearQuietSession(window.localStorage);
         setState(nextState);
         setRenderedLines([...introLines(nextState), ...result.output]);
+        reportProgress(nextState);
         return;
       }
 
       persistQuietSession(window.localStorage, nextState);
+      reportProgress(nextState);
 
       setState(nextState);
       const renderedResult = [{ text: `${shellPrompt(state)} ${command}`, tone: "input" } satisfies TerminalLine, ...result.output];
@@ -240,7 +287,7 @@ export function QuietInterfaceExperience() {
         appendLines(renderedResult);
       }
     },
-    [appendLines, emitTerminalSignal, setRenderedLines, state]
+    [appendLines, emitTerminalSignal, onRequestExit, reportProgress, setRenderedLines, state]
   );
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -283,6 +330,7 @@ export function QuietInterfaceExperience() {
         phase={state.phase}
         prompt={prompt}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}
+        exitHint={onRequestExit ? "esc · surface" : undefined}
         announcement={announcement}
         commandStatus={commandStatus}
         lines={lines}
@@ -294,16 +342,18 @@ export function QuietInterfaceExperience() {
         onTerminalAnchor={handleTerminalAnchor}
         onOpenPalette={openPalette}
       />
-      <CommandPalette
-        open={paletteOpen}
-        commands={paletteCommands}
-        onClose={closePalette}
-        onRun={(command) => {
-          closePalette();
-          emitTerminalSignal({ event: "palette", input: "", submittedCommand: command });
-          dispatchCommand(command);
-        }}
-      />
+      {paletteOpen ? (
+        <CommandPalette
+          open
+          commands={paletteCommands}
+          onClose={closePalette}
+          onRun={(command) => {
+            closePalette();
+            emitTerminalSignal({ event: "palette", input: "", submittedCommand: command });
+            dispatchCommand(command);
+          }}
+        />
+      ) : null}
     </main>
   );
 }

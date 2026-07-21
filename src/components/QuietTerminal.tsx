@@ -24,6 +24,7 @@ type QuietTerminalProps = {
   phase: InterfacePhase;
   prompt: string;
   hint?: string;
+  exitHint?: string;
   announcement: string;
   commandStatus: CommandStatus;
   lines: RenderedTerminalLine[];
@@ -82,6 +83,7 @@ export function QuietTerminal({
   phase,
   prompt,
   hint,
+  exitHint,
   announcement,
   commandStatus,
   lines,
@@ -291,7 +293,8 @@ export function QuietTerminal({
         <span className="quiet-terminal-state-light" aria-hidden="true" />
         <span>interface.service</span>
         <strong>{phase}</strong>
-        <span className="quiet-terminal-chrome-key" aria-hidden="true">?</span>
+        {exitHint ? <span className="quiet-terminal-exit-hint">{exitHint}</span> : null}
+        <span>?</span>
       </div>
       <div ref={outputRef} className="quiet-terminal-output" role="region" aria-label="Terminal transcript">
         {lines.map((line) =>
