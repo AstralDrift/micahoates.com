@@ -440,7 +440,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
             output: output([
               "operator record:",
               "  name: micah oates",
-              "  fields: platform / devops / software / ai systems",
+              "  origin: /surface",
               "  state: outside"
             ])
           };
@@ -500,7 +500,7 @@ export function runQuietCommand(input: string, state: QuietInterfaceState): Comm
         if (candidate?.id === "operator-log") return journalLines(state).map((line) => line.text).join("\n");
         if (candidate?.id === "signal" && state.hasDecodedSignal) return state.signalToken;
         if (candidate?.id === "fragment") return "follow trace order across carrier sample";
-        if (candidate?.id === "outside-record") return "name: micah oates\nfields: platform / devops / software / ai systems\nstate: outside";
+        if (candidate?.id === "outside-record") return "name: micah oates\norigin: /surface\nstate: outside";
         return "";
       })();
 
