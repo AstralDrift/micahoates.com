@@ -35,7 +35,8 @@ type QuietInterfaceCanvasProps = {
   puzzle: SignalPuzzleVisualState;
   terminalSignal: TerminalSignal;
   visualEvent?: VisualEvent;
-  pointer: { x: number; y: number; active: boolean };
+  visualEventNonce: number;
+  terminalAnchor: { x: number; y: number };
 };
 
 type RuntimeState = {
@@ -44,13 +45,22 @@ type RuntimeState = {
   puzzle: SignalPuzzleVisualState;
   terminalSignal: TerminalSignal;
   visualEvent?: VisualEvent;
+  visualEventNonce: number;
+  terminalAnchor: { x: number; y: number };
   pointer: { x: number; y: number; active: boolean };
   reactions: ReactionChannels;
   lastSignalNonce: number;
+  lastVisualEventNonce: number;
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const SIGNAL_SLOT_ANGLES = [-2.34, -1.18, 0, 1.18, 2.34];
+const SIGNAL_SLOT_POSITIONS = [
+  { x: -0.82, y: -0.56 },
+  { x: 0, y: -0.72 },
+  { x: 0.82, y: -0.34 },
+  { x: 0.76, y: 0.5 },
+  { x: -0.52, y: 0.68 }
+];
 
 function boost(reactions: ReactionChannels, channel: ReactionChannel, strength: number) {
   reactions[channel] = Math.max(reactions[channel], strength);
@@ -66,9 +76,14 @@ function signalInput(signal: TerminalSignal) {
   return signal.input || signal.submittedCommand || "";
 }
 
-function alignTokenInput(input: string) {
+function signalTokenInput(input: string) {
   const normalized = input.trim().toLowerCase().replace(/^\/+/, "");
-  return normalized.startsWith("align") ? normalized.slice("align".length).trim() : "";
+  if (normalized.startsWith("align")) {
+    return normalized.slice("align".length).trim();
+  }
+
+  const redirectMatch = normalized.match(/^(?:echo|printf)\s+([^\s>]*)/);
+  return redirectMatch?.[1] ?? "";
 }
 
 function tokenPrefixMatch(token: string, target: string) {
@@ -87,7 +102,15 @@ function tokenPrefixMatch(token: string, target: string) {
   return matched / target.length;
 }
 
-export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSignal, visualEvent, pointer }: QuietInterfaceCanvasProps) {
+export function QuietInterfaceCanvas({
+  phase,
+  signalLevel,
+  puzzle,
+  terminalSignal,
+  visualEvent,
+  visualEventNonce,
+  terminalAnchor
+}: QuietInterfaceCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const runtimeRef = useRef<RuntimeState>({
     phase,
@@ -95,27 +118,32 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
     puzzle,
     terminalSignal,
     visualEvent,
-    pointer,
+    visualEventNonce,
+    terminalAnchor,
+    pointer: { x: 0, y: 0, active: false },
     reactions: createReactionChannels(),
-    lastSignalNonce: terminalSignal.nonce
+    lastSignalNonce: terminalSignal.nonce,
+    lastVisualEventNonce: visualEventNonce
   });
 
   useEffect(() => {
     runtimeRef.current.phase = phase;
     runtimeRef.current.signalLevel = signalLevel;
     runtimeRef.current.puzzle = puzzle;
-    runtimeRef.current.pointer = pointer;
-  }, [phase, pointer, puzzle, signalLevel]);
+    runtimeRef.current.terminalAnchor = terminalAnchor;
+  }, [phase, puzzle, signalLevel, terminalAnchor]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
     runtime.visualEvent = visualEvent;
+    runtime.visualEventNonce = visualEventNonce;
 
-    if (visualEvent) {
+    if (visualEvent && visualEventNonce !== runtime.lastVisualEventNonce) {
+      runtime.lastVisualEventNonce = visualEventNonce;
       const reaction = commandReactionProfile(visualEvent);
       boost(runtime.reactions, reaction.channel, reaction.strength);
     }
-  }, [visualEvent]);
+  }, [visualEvent, visualEventNonce]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -165,6 +193,11 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
     let ratio = 1;
     let frame = 0;
     let animationFrame = 0;
+    let resizeFrame = 0;
+    let lastDrawTime = 0;
+    let pageVisible = document.visibilityState === "visible";
+    const mobileSurface = window.matchMedia("(max-width: 720px)");
+    let surfaceEnabled = !mobileSurface.matches;
     let particles: Particle[] = [];
     let nodes: NodePoint[] = [];
     let filaments: Filament[] = [];
@@ -190,6 +223,22 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       context.fillStyle = "#020302";
       context.fillRect(0, 0, width, height);
       buildField();
+    };
+
+    const scheduleResize = () => {
+      if (!surfaceEnabled) {
+        return;
+      }
+      window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(resize);
+    };
+
+    const currentTerminalOrigin = () => {
+      const anchor = runtimeRef.current.terminalAnchor;
+      if (anchor.x > 0 && anchor.x <= width && anchor.y > 0 && anchor.y <= height) {
+        return anchor;
+      }
+      return terminalOrigin(width, height);
     };
 
     const eventAmount = (event: VisualEvent, channel: ReactionChannel = "phase") => {
@@ -227,12 +276,6 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
         context.stroke();
       }
 
-      context.globalAlpha = (0.014 + intensity * 0.012) * reduction;
-      context.fillStyle = palette.primary;
-      for (let y = 0; y < height; y += 3) {
-        context.fillRect(0, y, width, 1);
-      }
-
       context.restore();
     };
 
@@ -241,13 +284,13 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       const profile = phaseProfile(state.phase);
       const palette = paletteForPhase(state.phase);
       const geometry = apparatusGeometry(width, height, state.phase, state.signalLevel);
-      const origin = terminalOrigin(width, height);
+      const origin = currentTerminalOrigin();
       const input = signalInput(state.terminalSignal);
       const typing = state.reactions.typing;
       const submit = state.reactions.submit;
       const trace = Math.max(eventAmount("trace"), state.phase === "assembly" || state.phase === "boundary" ? 0.34 : 0);
       const signal = Math.max(eventAmount("make-signal"), eventAmount("boundary"), submit * 0.28);
-      const phaseReduction = state.phase === "inside" ? 0.58 : state.phase === "outside" ? 0.36 : 1;
+      const phaseReduction = state.phase === "inside" ? 0.58 : state.phase === "outside" ? state.reactions.release * 0.22 : 1;
 
       nodes.forEach((node) => {
         const movement = reducedMotion ? 0 : 1;
@@ -374,9 +417,10 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       const palette = paletteForPhase(state.phase);
       const geometry = apparatusGeometry(width, height, state.phase, state.signalLevel);
       const input = signalInput(state.terminalSignal);
-      const typedToken = alignTokenInput(input);
+      const typedToken = signalTokenInput(input);
       const typedMatch = tokenPrefixMatch(typedToken, puzzle.signalToken);
-      const matchedSlotNumbers = puzzle.traceOrder.slice(0, Math.ceil(typedMatch * puzzle.signalToken.length));
+      const matchedSlotNumbers = new Set(puzzle.traceOrder.slice(0, Math.ceil(typedMatch * puzzle.signalToken.length)));
+      const tracePositionBySlot = new Map(puzzle.traceOrder.map((slotNumber, index) => [slotNumber, index]));
       const listen = Math.max(eventAmount("listen"), puzzle.hasListened ? 0.34 : 0);
       const trace = Math.max(eventAmount("trace"), puzzle.hasTraced ? 0.36 : 0);
       const decoded = Math.max(eventAmount("align-correct"), puzzle.hasDecodedSignal ? 0.66 : 0);
@@ -392,13 +436,13 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       const slotRadiusX = geometry.base * (0.94 + decoded * 0.08);
       const slotRadiusY = geometry.base * (0.62 + decoded * 0.1);
       const slots = puzzle.signalSlots.map((slot, index) => {
-        const angle = SIGNAL_SLOT_ANGLES[index] ?? 0;
+        const position = SIGNAL_SLOT_POSITIONS[index] ?? { x: 0, y: 0 };
         const slotNumber = index + 1;
-        const tracePosition = puzzle.traceOrder.indexOf(slotNumber);
-        const locked = puzzle.hasDecodedSignal || matchedSlotNumbers.includes(slotNumber);
+        const tracePosition = tracePositionBySlot.get(slotNumber) ?? -1;
+        const locked = puzzle.hasDecodedSignal || matchedSlotNumbers.has(slotNumber);
         const shear = wrong > 0.04 ? Math.sin(frame * 0.22 + index * 1.7) * wrong * 12 : 0;
-        const x = geometry.centerX + Math.cos(angle) * slotRadiusX + shear;
-        const y = geometry.centerY + Math.sin(angle) * slotRadiusY * 0.72 + Math.sin(frame * 0.016 + index) * (reducedMotion ? 0 : listen * 2.2);
+        const x = geometry.centerX + position.x * slotRadiusX + shear;
+        const y = geometry.centerY + position.y * slotRadiusY + Math.sin(frame * 0.016 + index) * (reducedMotion ? 0 : listen * 2.2);
 
         return { x, y, slot, slotNumber, tracePosition, locked };
       });
@@ -409,13 +453,14 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       context.textBaseline = "middle";
 
       if (trace > 0.04) {
+        const slotsByNumber = new Map(slots.map((slot) => [slot.slotNumber, slot]));
         context.strokeStyle = wrong > 0.04 ? palette.warning : decoded > 0.2 ? palette.secondary : palette.low;
         context.setLineDash([6, 14]);
         context.lineDashOffset = reducedMotion ? 0 : -frame * (0.18 + decoded * 0.18);
         context.globalAlpha = Math.min(0.56, 0.1 + trace * 0.32 + decoded * 0.16);
         for (let index = 0; index < puzzle.traceOrder.length - 1; index += 1) {
-          const from = slots.find((slot) => slot.slotNumber === puzzle.traceOrder[index]);
-          const to = slots.find((slot) => slot.slotNumber === puzzle.traceOrder[index + 1]);
+          const from = slotsByNumber.get(puzzle.traceOrder[index]);
+          const to = slotsByNumber.get(puzzle.traceOrder[index + 1]);
           if (!from || !to) {
             continue;
           }
@@ -491,7 +536,8 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       const listen = Math.max(eventAmount("listen"), state.phase === "observation" ? 0.16 : 0);
       const typing = state.reactions.typing;
       const release = Math.max(state.reactions.release, state.phase === "outside" ? 0.4 : 0);
-      const phaseReduction = state.phase === "inside" ? 0.52 : state.phase === "outside" ? 0.26 : state.phase === "dormant" ? 0.7 : 1;
+      const phaseReduction = state.phase === "inside" ? 0.52 : state.phase === "outside" ? state.reactions.release * 0.14 : state.phase === "dormant" ? 0.7 : 1;
+      const origin = currentTerminalOrigin();
 
       context.save();
       context.textBaseline = "middle";
@@ -502,9 +548,9 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
         const orbit = particle.phase + frame * (reducedMotion ? 0 : 0.0014 + (index % 5) * 0.00016);
         const orbitX = geometry.centerX + Math.cos(orbit) * geometry.base * (0.9 + (index % 4) * 0.16);
         const orbitY = geometry.centerY + Math.sin(orbit) * geometry.base * (0.34 + (index % 3) * 0.06);
-        const bandX = lerp(terminalOrigin(width, height).x, geometry.centerX, (index % 17) / 16);
+        const bandX = lerp(origin.x, geometry.centerX, (index % 17) / 16);
         const wave = Math.sin((index * 0.62 + frame * (reducedMotion ? 0 : 0.035)) + coherence * 4) * (16 + listen * 34);
-        const bandY = lerp(terminalOrigin(width, height).y, geometry.centerY, 0.46) + wave;
+        const bandY = lerp(origin.y, geometry.centerY, 0.46) + wave;
         const targetX = lerp(lerp(particle.homeX, orbitX, coherence * 0.54), bandX, bandAmount * listen);
         const targetY = lerp(lerp(particle.homeY, orbitY, coherence * 0.44), bandY, bandAmount * listen);
         const pointerPush = state.pointer.active ? Math.max(0, 1 - Math.hypot(particle.x - state.pointer.x, particle.y - state.pointer.y) / 170) : 0;
@@ -541,8 +587,8 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
         context.beginPath();
         for (let index = 0; index < 86; index += 1) {
           const amount = index / 85;
-          const x = lerp(terminalOrigin(width, height).x, geometry.centerX + geometry.base * 0.58, amount);
-          const y = lerp(terminalOrigin(width, height).y, geometry.centerY, 0.48) + Math.sin(amount * Math.PI * 6 + frame * 0.055) * (9 + listen * 26);
+          const x = lerp(origin.x, geometry.centerX + geometry.base * 0.58, amount);
+          const y = lerp(origin.y, geometry.centerY, 0.48) + Math.sin(amount * Math.PI * 6 + frame * 0.055) * (9 + listen * 26);
           if (index === 0) {
             context.moveTo(x, y);
           } else {
@@ -572,15 +618,20 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       const makeSignal = eventAmount("make-signal");
       const boundary = Math.max(eventAmount("boundary"), state.phase === "boundary" ? 0.42 : 0);
       const enter = Math.max(eventAmount("enter"), state.phase === "inside" ? 0.24 : 0);
-      const release = Math.max(state.reactions.release, state.phase === "outside" ? 0.44 : 0);
+      const release = state.reactions.release;
       const opening = clamp01(profile.split + boundary * 0.32 + enter * 0.18 + release * 0.32);
       const boundaryVisible = state.signalLevel >= 66 || state.phase === "boundary" || state.phase === "inside" || state.phase === "outside";
       const apertureScale = 1 + wake * 0.06 + makeSignal * 0.05 - release * 0.18;
-      const phaseReduction = state.phase === "outside" ? 0.72 : 1;
+      const phaseReduction = state.phase === "outside" ? clamp01(release * 1.2) : 1;
+      const transitionEmphasis = submit + makeSignal + boundary + release;
+
+      if (state.phase === "outside" && phaseReduction <= 0.015) {
+        return;
+      }
 
       context.save();
       context.shadowColor = error > 0.04 ? palette.warning : palette.primary;
-      context.shadowBlur = 5 + (submit + makeSignal + boundary + release) * 18;
+      context.shadowBlur = transitionEmphasis > 0.04 ? 1 + transitionEmphasis * 6 : 0;
 
       cells.forEach((cell) => {
         const side = cell.nx < 0 ? -1 : 1;
@@ -700,7 +751,7 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
 
       const wake = eventAmount("wake");
       const y = wake > 0 ? lerp(geometry.centerY - geometry.base, geometry.centerY + geometry.base, 1 - wake) : geometry.centerY + Math.sin(frame * 0.012) * geometry.base * 0.28;
-      const x = lerp(terminalOrigin(width, height).x, geometry.centerX, clamp01(state.signalLevel / 100));
+      const x = lerp(currentTerminalOrigin().x, geometry.centerX, clamp01(state.signalLevel / 100));
 
       context.save();
       context.lineWidth = 1;
@@ -738,26 +789,40 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       context.lineTo(geometry.centerX + geometry.base * 0.92, geometry.centerY);
       context.stroke();
 
-      const count = reducedMotion ? 8 : 18;
-      for (let index = 0; index < count; index += 1) {
-        const amount = index / Math.max(1, count - 1);
-        const radius = geometry.base * (0.26 + amount * 1.1);
-        const angle = amount * Math.PI * 2 + (reducedMotion ? 0 : frame * 0.002);
-        const x = geometry.centerX + Math.cos(angle) * radius;
-        const y = geometry.centerY + Math.sin(angle) * radius * 0.32;
-        context.globalAlpha = Math.max(0.025, (1 - amount) * release * 0.25);
-        context.fillRect(x - 1, y - 1, 2, 2);
-      }
+      const residue = [-0.78, -0.36, 0, 0.38, 0.78];
+      residue.forEach((position, index) => {
+        const settle = reducedMotion ? 0 : Math.sin(frame * 0.007 + index * 1.4) * 1.4;
+        const x = geometry.centerX + position * geometry.base;
+        const y = geometry.centerY + (index % 2 === 0 ? -1 : 1) * geometry.base * 0.055 + settle;
+        context.globalAlpha = Math.min(0.42, 0.12 + release * 0.18 - index * 0.008);
+        context.fillRect(x - 1.5, y - 1.5, 3, 3);
+      });
+
+      context.globalAlpha = Math.min(0.32, 0.08 + release * 0.14);
+      context.beginPath();
+      context.moveTo(geometry.centerX, geometry.centerY - geometry.base * 0.42);
+      context.lineTo(geometry.centerX, geometry.centerY + geometry.base * 0.42);
+      context.stroke();
 
       context.restore();
     };
 
-    const draw = () => {
-      frame += 1;
+    const draw = (timestamp: number) => {
+      if (!pageVisible || !surfaceEnabled) {
+        return;
+      }
+
+      animationFrame = window.requestAnimationFrame(draw);
+      const frameInterval = reducedMotion ? 160 : width < 720 ? 100 : 1000 / 60;
+      if (timestamp - lastDrawTime < frameInterval) {
+        return;
+      }
+      lastDrawTime = timestamp;
+      frame = timestamp / (1000 / 60);
 
       const state = runtimeRef.current;
       const palette = paletteForPhase(state.phase);
-      context.fillStyle = palette.fill;
+      context.fillStyle = reducedMotion ? "#020403" : palette.fill;
       context.fillRect(0, 0, width, height);
 
       drawBaseField();
@@ -768,16 +833,66 @@ export function QuietInterfaceCanvas({ phase, signalLevel, puzzle, terminalSigna
       drawOutsideResidue();
 
       state.reactions = decayReactions(state.reactions, reducedMotion);
+    };
+
+    const startDrawing = () => {
+      window.cancelAnimationFrame(animationFrame);
       animationFrame = window.requestAnimationFrame(draw);
     };
 
-    resize();
-    draw();
-    window.addEventListener("resize", resize);
+    const handleVisibility = () => {
+      pageVisible = document.visibilityState === "visible";
+      if (pageVisible && surfaceEnabled) {
+        lastDrawTime = 0;
+        startDrawing();
+      } else {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
+
+    const handleSurfaceChange = () => {
+      surfaceEnabled = !mobileSurface.matches;
+      window.cancelAnimationFrame(animationFrame);
+
+      if (surfaceEnabled && pageVisible) {
+        lastDrawTime = 0;
+        resize();
+        startDrawing();
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") {
+        return;
+      }
+      runtimeRef.current.pointer = { x: event.clientX, y: event.clientY, active: true };
+    };
+
+    const handlePointerLeave = () => {
+      runtimeRef.current.pointer.active = false;
+    };
+
+    if (surfaceEnabled) {
+      resize();
+      startDrawing();
+    }
+    const resizeObserver = new ResizeObserver(scheduleResize);
+    resizeObserver.observe(document.documentElement);
+    window.addEventListener("resize", scheduleResize);
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("mouseleave", handlePointerLeave);
+    document.addEventListener("visibilitychange", handleVisibility);
+    mobileSurface.addEventListener("change", handleSurfaceChange);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", resize);
+      window.cancelAnimationFrame(resizeFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", scheduleResize);
+      window.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("mouseleave", handlePointerLeave);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      mobileSurface.removeEventListener("change", handleSurfaceChange);
     };
   }, []);
 

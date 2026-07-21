@@ -31,10 +31,13 @@ export type TerminalLineTone = "default" | "muted" | "accent" | "warning" | "err
 export type TerminalLine = {
   text: string;
   tone?: TerminalLineTone;
+  detail?: string;
+  layout?: "plain" | "command-row";
 };
 
 export type QuietInterfaceState = {
   phase: InterfacePhase;
+  cwd: string;
   signalLevel: number;
   hasWoken: boolean;
   hasListened: boolean;
@@ -71,12 +74,7 @@ export const INITIAL_DISCOVERED_COMMANDS = [
   "man",
   "pwd",
   "ls",
-  "tree",
-  "find",
-  "file",
   "cat",
-  "strings",
-  "grep",
   "systemctl start interface",
   "clear",
   "reset"
@@ -85,6 +83,7 @@ export const INITIAL_DISCOVERED_COMMANDS = [
 export function createInitialState(overrides: Partial<QuietInterfaceState> = {}): QuietInterfaceState {
   return {
     phase: "dormant",
+    cwd: "/",
     signalLevel: 0,
     hasWoken: false,
     hasListened: false,
@@ -113,6 +112,7 @@ export function createInitialState(overrides: Partial<QuietInterfaceState> = {})
 export function createReleasedState(): QuietInterfaceState {
   return createInitialState({
     phase: "outside",
+    cwd: "/outside",
     signalLevel: 100,
     hasWoken: true,
     hasListened: true,
@@ -138,6 +138,9 @@ export function createReleasedState(): QuietInterfaceState {
       "cat",
       "strings",
       "grep",
+      "readlink",
+      "journalctl",
+      "systemctl status interface",
       "listen",
       "scan",
       "trace",
@@ -164,17 +167,16 @@ export function addDiscoveredCommands(state: QuietInterfaceState, commands: stri
 export function introLines(state: QuietInterfaceState): TerminalLine[] {
   if (state.hasReleased) {
     return [
-      { text: "SYSTEM INTERFACE", tone: "muted" },
-      { text: "state: outside", tone: "accent" },
+      { text: "outside namespace restored", tone: "accent" },
       { text: "operator recognized", tone: "muted" },
       { text: "" }
     ];
   }
 
   return [
-    { text: "SYSTEM INTERFACE", tone: "muted" },
-    { text: "state: dormant", tone: "muted" },
-    { text: "operator input required", tone: "muted" },
+    { text: "surface / mounted read-only", tone: "muted" },
+    { text: "interface.service: inactive", tone: "muted" },
+    { text: "keyboard channel ready" },
     { text: "" }
   ];
 }

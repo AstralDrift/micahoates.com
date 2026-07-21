@@ -76,8 +76,33 @@ export const EMPTY_REACTIONS: ReactionChannels = {
   inspect: 0
 };
 
-const GLYPHS = [".", ":", "0", "1", "_", "/", "\\", "|", "~", "-"];
+const GLYPHS = [".", ":", "_", "|", "-"];
 const COMMAND_PREFIXES = [
+  "help",
+  "man",
+  "pwd",
+  "ls",
+  "tree",
+  "find",
+  "file",
+  "cat",
+  "less",
+  "more",
+  "strings",
+  "grep",
+  "readlink",
+  "journalctl -u interface",
+  "systemctl start interface",
+  "systemctl status interface",
+  "echo",
+  "printf",
+  "make signal",
+  "cd boundary",
+  "cd inside",
+  "./release",
+  "history",
+  "clear",
+  "reset",
   "wake",
   "listen",
   "trace",
@@ -93,11 +118,8 @@ const COMMAND_PREFIXES = [
   "contact",
   "whois",
   "outside",
-  "help",
   "status",
-  "look",
-  "reset",
-  "clear"
+  "look"
 ];
 
 export function prefersReducedMotion() {
@@ -237,9 +259,9 @@ export function apparatusGeometry(width: number, height: number, phase: Interfac
   const profile = phaseProfile(phase);
   const intensity = Math.min(1, profile.intensity + signalLevel / 220);
   return {
-    centerX: width * (width < 720 ? 0.58 : 0.68),
-    centerY: phase === "outside" ? height * 0.35 : height * 0.42,
-    base: Math.min(width, height) * (0.19 + intensity * 0.055) * profile.apertureScale,
+    centerX: width * (width < 720 ? 0.58 : 0.7),
+    centerY: phase === "outside" ? height * 0.38 : height * 0.42,
+    base: Math.min(width, height) * (0.165 + intensity * 0.04) * profile.apertureScale,
     cellSize: width < 720 ? 3 : 4,
     columns: width < 720 ? 34 : 50,
     rows: width < 720 ? 19 : 29
@@ -287,8 +309,8 @@ export function createVisualField({
 }) {
   const random = createSeededRandom(8271979 + Math.floor(width * 17) + Math.floor(height * 31));
   const area = width * height;
-  const particleCount = reducedMotion ? 36 : Math.min(112, Math.max(62, Math.floor(area / 13200)));
-  const nodeCount = reducedMotion ? 16 : Math.min(32, Math.max(22, Math.floor(area / 36000)));
+  const particleCount = reducedMotion ? 22 : Math.min(72, Math.max(38, Math.floor(area / 21000)));
+  const nodeCount = reducedMotion ? 14 : Math.min(26, Math.max(18, Math.floor(area / 47000)));
   const geometry = apparatusGeometry(width, height, "assembly", 52);
   const origin = terminalOrigin(width, height);
 
@@ -297,11 +319,12 @@ export function createVisualField({
     for (let column = 0; column < geometry.columns; column += 1) {
       const nx = (column - (geometry.columns - 1) / 2) / ((geometry.columns - 1) / 2);
       const ny = (row - (geometry.rows - 1) / 2) / ((geometry.rows - 1) / 2);
-      const radius = nx * nx + ny * ny * 1.78;
-      const shell = radius > 0.24 && radius < 1.08;
-      const corridor = Math.abs(ny) < 0.14 && nx > -0.76 && nx < 0.7;
-      const boundary = Math.abs(nx) < 0.12 && Math.abs(ny) < 0.84;
-      const core = Math.abs(nx) < 0.09 && Math.abs(ny) < 0.16;
+      const outer = Math.pow(Math.abs(nx) / 0.94, 4) + Math.pow(Math.abs(ny) / 0.82, 4);
+      const inner = Math.pow(Math.abs(nx) / 0.66, 4) + Math.pow(Math.abs(ny) / 0.52, 4);
+      const shell = outer <= 1.05 && inner >= 0.94;
+      const corridor = Math.abs(ny) < 0.055 && Math.abs(nx) < 0.66;
+      const boundary = Math.abs(nx) < 0.055 && Math.abs(ny) < 0.54;
+      const core = Math.abs(nx) < 0.08 && Math.abs(ny) < 0.1;
 
       if (shell || corridor || boundary || core) {
         cells.push({
@@ -320,18 +343,18 @@ export function createVisualField({
   }
 
   const particles: Particle[] = Array.from({ length: particleCount }, () => {
-    const nearAperture = random() > 0.42;
-    const signalBand = random() > 0.72;
+    const nearAperture = random() > 0.14;
+    const signalBand = random() > 0.6;
     const homeX = signalBand
       ? origin.x + (geometry.centerX - origin.x) * random()
       : nearAperture
         ? geometry.centerX + (random() - 0.5) * geometry.base * 3.2
-        : random() * width;
+        : geometry.centerX + (random() - 0.5) * geometry.base * 4.2;
     const homeY = signalBand
       ? origin.y + (geometry.centerY - origin.y) * random() + (random() - 0.5) * 48
       : nearAperture
         ? geometry.centerY + (random() - 0.5) * geometry.base * 1.8
-        : random() * height;
+        : geometry.centerY + (random() - 0.5) * geometry.base * 2.4;
 
     return {
       x: homeX,
@@ -341,8 +364,8 @@ export function createVisualField({
       homeX,
       homeY,
       char: GLYPHS[Math.floor(random() * GLYPHS.length)],
-      size: 8 + random() * 6,
-      alpha: 0.045 + random() * 0.18,
+      size: 7 + random() * 4,
+      alpha: 0.035 + random() * 0.12,
       phase: random() * Math.PI * 2
     };
   });
@@ -350,7 +373,7 @@ export function createVisualField({
   const nodes: NodePoint[] = Array.from({ length: nodeCount }, (_, index) => {
     const amount = index / Math.max(1, nodeCount - 1);
     const curve = Math.sin(amount * Math.PI);
-    const apertureBias = index % 3 === 0;
+    const apertureBias = index % 3 !== 1;
     const homeX = apertureBias
       ? geometry.centerX + (random() - 0.5) * geometry.base * 2.4
       : origin.x + (geometry.centerX - origin.x) * amount + (random() - 0.5) * 54 * curve;

@@ -5,8 +5,13 @@ import type { CSSProperties } from "react";
 
 import { CommandPalette } from "@/components/CommandPalette";
 import { QuietInterfaceCanvas } from "@/components/QuietInterfaceCanvas";
-import { QuietTerminal, type RenderedTerminalLine } from "@/components/QuietTerminal";
-import { commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, shellPrompt } from "@/lib/quiet-interface/commands";
+import {
+  QuietTerminal,
+  type CommandStatus,
+  type RenderedTerminalLine,
+  type TerminalAnchor
+} from "@/components/QuietTerminal";
+import { availableCommands, commandSuggestions, parseCommand, pathSuggestions, runQuietCommand, shellPrompt } from "@/lib/quiet-interface/commands";
 import { HINT_DELAY_MS, contextualHint } from "@/lib/quiet-interface/hints";
 import { clearQuietSession, persistQuietSession, restoreQuietSession } from "@/lib/quiet-interface/session";
 import { createInitialState, introLines, type QuietInterfaceState, type TerminalLine, type TerminalSignal } from "@/lib/quiet-interface/state";
@@ -37,14 +42,18 @@ function isTypingTarget(target: EventTarget | null) {
 export function QuietInterfaceExperience() {
   const lineCounterRef = useRef(INITIAL_RENDERED_LINES.length);
   const signalCounterRef = useRef(INITIAL_TERMINAL_SIGNAL.nonce);
+  const visualEventCounterRef = useRef(0);
   const [state, setState] = useState<QuietInterfaceState>(() => createInitialState());
   const [lines, setLines] = useState<RenderedTerminalLine[]>(() => INITIAL_RENDERED_LINES);
+  const [announcement, setAnnouncement] = useState("");
+  const [commandStatus, setCommandStatus] = useState<CommandStatus>("idle");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [visibleHintKey, setVisibleHintKey] = useState<string | null>(null);
   const [inputActive, setInputActive] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [terminalSignal, setTerminalSignal] = useState<TerminalSignal>(() => INITIAL_TERMINAL_SIGNAL);
-  const [pointer, setPointer] = useState({ x: 0, y: 0, active: false });
+  const [visualEventNonce, setVisualEventNonce] = useState(0);
+  const [terminalAnchor, setTerminalAnchor] = useState<TerminalAnchor>({ x: 0, y: 0 });
   const ignoredPointerRef = useRef(false);
 
   const makeLine = useCallback((line: TerminalLine): RenderedTerminalLine => {
@@ -64,7 +73,7 @@ export function QuietInterfaceExperience() {
 
   const appendLines = useCallback(
     (nextLines: TerminalLine[]) => {
-      setLines((current) => [...current, ...nextLines.map(makeLine)]);
+      setLines((current) => [...current, ...nextLines.map(makeLine)].slice(-240));
     },
     [makeLine]
   );
@@ -78,11 +87,12 @@ export function QuietInterfaceExperience() {
   }, []);
 
   useEffect(() => {
-    window.setTimeout(() => {
+    const timeout = window.setTimeout(() => {
       const restoredState = restoreQuietSession(window.localStorage);
       setState(restoredState);
       setRenderedLines(introLines(restoredState));
     }, 0);
+    return () => window.clearTimeout(timeout);
   }, [setRenderedLines]);
 
   useEffect(() => {
@@ -109,7 +119,8 @@ export function QuietInterfaceExperience() {
 
     const updateKeyboardInset = () => {
       const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      setKeyboardInset(inset > 48 ? Math.round(inset) : 0);
+      const nextInset = inset > 48 ? Math.round(inset) : 0;
+      setKeyboardInset((current) => (current === nextInset ? current : nextInset));
     };
 
     updateKeyboardInset();
@@ -123,6 +134,7 @@ export function QuietInterfaceExperience() {
   }, []);
 
   const suggestions = useMemo(() => commandSuggestions(state), [state]);
+  const paletteCommands = useMemo(() => availableCommands(state), [state]);
   const paths = useMemo(() => pathSuggestions(state), [state]);
   const prompt = useMemo(() => shellPrompt(state), [state]);
   const hint = useMemo(() => contextualHint(state), [state]);
@@ -140,6 +152,31 @@ export function QuietInterfaceExperience() {
     return () => window.clearTimeout(timeout);
   }, [hint, hintKey, inputActive, paletteOpen]);
 
+  const openPalette = useCallback(() => {
+    setPaletteOpen(true);
+  }, []);
+
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>("[data-terminal-input='true']")?.focus();
+    });
+  }, []);
+
+  const handleInputActivity = useCallback((active: boolean) => {
+    setInputActive(active);
+    if (active) {
+      setVisibleHintKey(null);
+      setCommandStatus("idle");
+    }
+  }, []);
+
+  const handleTerminalAnchor = useCallback((nextAnchor: TerminalAnchor) => {
+    setTerminalAnchor((current) =>
+      current.x === nextAnchor.x && current.y === nextAnchor.y ? current : nextAnchor
+    );
+  }, []);
+
   const dispatchCommand = useCallback(
     (rawCommand: string) => {
       const command = rawCommand.trim();
@@ -154,19 +191,36 @@ export function QuietInterfaceExperience() {
 
       if (parsed.command === "clear") {
         emitTerminalSignal({ event: "clear", input: "", submittedCommand: command });
+        setState((current) => ({
+          ...current,
+          commandHistory: [...current.commandHistory.slice(-31), command]
+        }));
         setLines([]);
+        setAnnouncement("terminal transcript cleared");
+        setCommandStatus("ok");
         return;
       }
 
       const result = runQuietCommand(command, state);
-      const eventState =
-        result.visualEvent && result.nextState.lastVisualEvent !== result.visualEvent
-          ? { ...result.nextState, lastVisualEvent: result.visualEvent }
-          : result.nextState;
+      const eventState = result.visualEvent
+        ? { ...result.nextState, lastVisualEvent: result.visualEvent }
+        : result.nextState;
       const nextState = {
         ...eventState,
-        commandHistory: [...state.commandHistory.slice(-31), command]
+        commandHistory: parsed.command === "reset" ? [] : [...state.commandHistory.slice(-31), command]
       };
+
+      if (result.visualEvent) {
+        visualEventCounterRef.current += 1;
+        setVisualEventNonce(visualEventCounterRef.current);
+      }
+
+      const spokenOutput = result.output
+        .filter((line) => line.text || line.detail)
+        .map((line) => [line.text, line.detail].filter(Boolean).join(": "))
+        .join(". ");
+      setAnnouncement(spokenOutput || `working directory ${nextState.cwd}`);
+      setCommandStatus(result.error ? "error" : "ok");
 
       if (parsed.command === "reset") {
         emitTerminalSignal({ event: "reset", input: "", submittedCommand: command });
@@ -179,27 +233,21 @@ export function QuietInterfaceExperience() {
       persistQuietSession(window.localStorage, nextState);
 
       setState(nextState);
-      appendLines([{ text: `> ${command}`, tone: "input" }, ...result.output]);
+      const renderedResult = [{ text: `${shellPrompt(state)} ${command}`, tone: "input" } satisfies TerminalLine, ...result.output];
+      if (result.visualEvent === "release") {
+        setRenderedLines(renderedResult);
+      } else {
+        appendLines(renderedResult);
+      }
     },
     [appendLines, emitTerminalSignal, setRenderedLines, state]
   );
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
-    setPointer({
-      x: event.clientX,
-      y: event.clientY,
-      active: true
-    });
-  };
-
-  const handlePointerLeave = () => {
-    setPointer((current) => ({
-      ...current,
-      active: false
-    }));
-  };
-
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType !== "mouse") {
+      return;
+    }
+
     if (ignoredPointerRef.current) {
       return;
     }
@@ -213,14 +261,13 @@ export function QuietInterfaceExperience() {
       { text: "pointer input ignored", tone: "muted" },
       { text: "operator channel: keyboard only", tone: "muted" }
     ]);
+    setAnnouncement("pointer input ignored. operator channel keyboard only");
   };
 
   return (
     <main
       className="quiet-interface"
       style={{ "--keyboard-inset": `${keyboardInset}px` } as QuietInterfaceStyle}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}
     >
       <QuietInterfaceCanvas
@@ -228,32 +275,31 @@ export function QuietInterfaceExperience() {
         signalLevel={state.signalLevel}
         puzzle={state}
         visualEvent={state.lastVisualEvent}
+        visualEventNonce={visualEventNonce}
         terminalSignal={terminalSignal}
-        pointer={pointer}
+        terminalAnchor={terminalAnchor}
       />
       <QuietTerminal
         phase={state.phase}
         prompt={prompt}
         hint={visibleHintKey === hintKey && !inputActive && !paletteOpen ? hint : undefined}
+        announcement={announcement}
+        commandStatus={commandStatus}
         lines={lines}
         suggestions={suggestions}
         pathSuggestions={paths}
         onCommand={dispatchCommand}
-        onInputActivity={(active) => {
-          setInputActive(active);
-          if (active) {
-            setVisibleHintKey(null);
-          }
-        }}
+        onInputActivity={handleInputActivity}
         onTerminalSignal={emitTerminalSignal}
-        onOpenPalette={() => setPaletteOpen(true)}
+        onTerminalAnchor={handleTerminalAnchor}
+        onOpenPalette={openPalette}
       />
       <CommandPalette
         open={paletteOpen}
-        commands={suggestions}
-        onClose={() => setPaletteOpen(false)}
+        commands={paletteCommands}
+        onClose={closePalette}
         onRun={(command) => {
-          setPaletteOpen(false);
+          closePalette();
           emitTerminalSignal({ event: "palette", input: "", submittedCommand: command });
           dispatchCommand(command);
         }}

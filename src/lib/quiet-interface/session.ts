@@ -8,12 +8,12 @@ type StoredQuietInterfaceState = {
 };
 
 export function restoreQuietSession(storage: Storage): QuietInterfaceState {
-  const stored = storage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return createInitialState();
-  }
-
   try {
+    const stored = storage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return createInitialState();
+    }
+
     const parsed = JSON.parse(stored) as StoredQuietInterfaceState;
     return parsed.hasReleased ? createReleasedState() : createInitialState();
   } catch {
@@ -26,15 +26,23 @@ export function persistQuietSession(storage: Storage, state: QuietInterfaceState
     return;
   }
 
-  storage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      hasReleased: true,
-      lastPhase: state.phase
-    } satisfies StoredQuietInterfaceState)
-  );
+  try {
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        hasReleased: true,
+        lastPhase: state.phase
+      } satisfies StoredQuietInterfaceState)
+    );
+  } catch {
+    // Persistence is optional; the current transition must always complete.
+  }
 }
 
 export function clearQuietSession(storage: Storage) {
-  storage.removeItem(STORAGE_KEY);
+  try {
+    storage.removeItem(STORAGE_KEY);
+  } catch {
+    // Reset still succeeds when storage is unavailable or disabled.
+  }
 }

@@ -18,7 +18,10 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   { command: "cat", description: "print file contents", aliases: ["less", "more"] },
   { command: "strings", description: "extract readable signal data" },
   { command: "grep", description: "search visible files" },
-  { command: "systemctl start interface", description: "resume interface service", aliases: ["wake"] },
+  { command: "readlink", description: "print a symbolic-link target" },
+  { command: "journalctl", description: "read the interface journal" },
+  { command: "systemctl start interface", description: "start interface.service", aliases: ["wake"] },
+  { command: "systemctl status interface", description: "inspect interface.service" },
   { command: "echo", description: "print text or write token" },
   { command: "printf", description: "write token without newline" },
   { command: "make signal", description: "assemble the signal" },
@@ -105,6 +108,9 @@ function contactAddress() {
 
 export function releaseLines(perfectRun: boolean): TerminalLine[] {
   const lines: TerminalLine[] = [
+    { text: "release accepted", tone: "accent" },
+    { text: "outbound process detached", tone: "muted" },
+    { text: "" },
     { text: "name: micah oates" },
     { text: `contact: ${contactAddress()}` },
     { text: "state: outside", tone: "accent" },

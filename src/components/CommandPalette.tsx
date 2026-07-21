@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
+import type { CommandDefinition } from "@/lib/quiet-interface/copy";
+
 type CommandPaletteProps = {
   open: boolean;
-  commands: string[];
+  commands: CommandDefinition[];
   onClose: () => void;
   onRun: (command: string) => void;
 };
@@ -17,31 +19,31 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
 
   const shortcutMap = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const command of commands) {
-      const key = command[0]?.toLowerCase();
+    for (const definition of commands) {
+      const key = definition.command[0]?.toLowerCase();
       if (key) {
         counts.set(key, (counts.get(key) ?? 0) + 1);
       }
     }
 
-    return new Map(commands.map((command) => {
-      const key = command[0]?.toLowerCase() ?? "";
-      return [command, key && counts.get(key) === 1 ? key : ""] as const;
+    return new Map(commands.map((definition) => {
+      const key = definition.command[0]?.toLowerCase() ?? "";
+      return [definition.command, key && counts.get(key) === 1 ? key : ""] as const;
     }));
   }, [commands]);
 
   const safeSelectedIndex = commands.length === 0 ? 0 : Math.min(selectedIndex, commands.length - 1);
-  const selectedCommand = commands[safeSelectedIndex];
+  const selectedCommand = commands[safeSelectedIndex]?.command;
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    window.setTimeout(() => {
-      setSelectedIndex(0);
+    const timeout = window.setTimeout(() => {
       dialogRef.current?.focus();
     }, 0);
+    return () => window.clearTimeout(timeout);
   }, [open]);
 
   useEffect(() => {
@@ -83,9 +85,23 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
       return;
     }
 
+    if (event.key === "Tab") {
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLButtonElement);
+      if ((!event.shiftKey && activeIndex === focusable.length - 1) || (event.shiftKey && activeIndex <= 0)) {
+        event.preventDefault();
+        focusable[event.shiftKey ? focusable.length - 1 : 0]?.focus();
+      }
+      return;
+    }
+
     if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key.length === 1 && /^[a-z0-9]$/i.test(event.key)) {
       const key = event.key.toLowerCase();
-      const exactShortcut = commands.find((command) => shortcutMap.get(command) === key);
+      const exactShortcut = commands.find((definition) => shortcutMap.get(definition.command) === key)?.command;
 
       event.preventDefault();
       if (exactShortcut) {
@@ -93,7 +109,9 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
         return;
       }
 
-      const matchingIndexes = commands.map((command, index) => ({ command, index })).filter(({ command }) => command.startsWith(key));
+      const matchingIndexes = commands
+        .map((definition, index) => ({ command: definition.command, index }))
+        .filter(({ command }) => command.startsWith(key));
       if (matchingIndexes.length > 0) {
         const nextMatch = matchingIndexes.find(({ index }) => index > safeSelectedIndex) ?? matchingIndexes[0];
         setSelectedIndex(nextMatch.index);
@@ -120,19 +138,22 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
           </button>
         </div>
         <div className="quiet-palette-list" aria-label="Discovered commands">
-          {commands.map((command, index) => (
+          {commands.map((definition, index) => (
             <button
-              key={command}
+              key={definition.command}
               ref={(node) => {
                 itemRefs.current[index] = node;
               }}
               type="button"
               data-selected={index === safeSelectedIndex}
               onMouseEnter={() => setSelectedIndex(index)}
-              onClick={() => run(command)}
+              onClick={() => run(definition.command)}
             >
-              <span>{command}</span>
-              <span>{shortcutMap.get(command) || "enter"}</span>
+              <span className="quiet-palette-command">
+                <strong>{definition.command}</strong>
+                <small>{definition.description}</small>
+              </span>
+              <span>{shortcutMap.get(definition.command) || "enter"}</span>
             </button>
           ))}
           {commands.length === 0 ? <p>no directives discovered</p> : null}

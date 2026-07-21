@@ -1,44 +1,47 @@
 import type { QuietInterfaceState } from "@/lib/quiet-interface/state";
 
-export const HINT_DELAY_MS = 900;
+export const HINT_DELAY_MS = 2600;
 
 export function contextualHint(state: QuietInterfaceState) {
   if (!state.hasWoken) {
-    return "try: help";
+    return state.commandHistory.includes("help") ? "interface.service is inactive" : "try: help";
   }
 
   if (state.phase === "observation") {
+    if (!state.hasScanned && !state.hasListened) {
+      return "inspect: ls -la";
+    }
     if (!state.hasListened) {
-      return "next: cat carrier";
+      return "carrier -> carrier.sample";
     }
     if (!state.hasTraced) {
-      return "next: cat trace";
+      return "trace -> trace.path";
     }
     if (!state.hasDecodedSignal) {
-      return "next: echo <token> > signal";
+      return state.alignAttempts >= 2 ? "journal: new entry" : "signal accepts redirected input";
     }
-    return "next: make signal";
+    return "make target: signal";
   }
 
   if (state.phase === "assembly") {
     if (!state.hasDecodedSignal) {
-      return "next: echo <token> > signal";
+      return state.alignAttempts >= 2 ? "journal: new entry" : "signal accepts redirected input";
     }
-    return "next: make signal";
+    return "make target: signal";
   }
 
   if (state.phase === "boundary") {
     if (!state.boundaryOpen) {
-      return "next: cd boundary";
+      return "boundary is a directory";
     }
     if (!state.hasEntered) {
-      return "next: cd inside";
+      return "inside/ is readable";
     }
-    return "next: ./release";
+    return "release is executable";
   }
 
   if (state.phase === "inside") {
-    return "next: ./release";
+    return "release is executable";
   }
 
   return undefined;
