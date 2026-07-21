@@ -9,8 +9,6 @@ import {
   parseCommand
 } from "@/lib/quiet-interface/command-registry";
 import {
-  directoryEntries,
-  displayName,
   findDirectoryLines,
   followVirtualEntry,
   getVirtualEntry,
@@ -121,10 +119,6 @@ function traceOrder(state: QuietInterfaceState) {
 
 export function currentPath(state: QuietInterfaceState) {
   return state.cwd;
-}
-
-export function visibleFiles(state: QuietInterfaceState) {
-  return [".", ...directoryEntries(state).map(displayName)];
 }
 
 export function shellPrompt(state: QuietInterfaceState) {

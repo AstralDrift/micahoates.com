@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 
 import type { InterfacePhase, TerminalLineTone, TerminalSignal, TerminalSignalEvent } from "@/lib/quiet-interface/state";
 
@@ -24,7 +24,6 @@ type QuietTerminalProps = {
   phase: InterfacePhase;
   prompt: string;
   hint?: string;
-  exitHint?: string;
   announcement: string;
   commandStatus: CommandStatus;
   lines: RenderedTerminalLine[];
@@ -83,7 +82,6 @@ export function QuietTerminal({
   phase,
   prompt,
   hint,
-  exitHint,
   announcement,
   commandStatus,
   lines,
@@ -293,13 +291,19 @@ export function QuietTerminal({
         <span className="quiet-terminal-state-light" aria-hidden="true" />
         <span>interface.service</span>
         <strong>{phase}</strong>
-        {exitHint ? <span className="quiet-terminal-exit-hint">{exitHint}</span> : null}
         <span>?</span>
       </div>
       <div ref={outputRef} className="quiet-terminal-output" role="region" aria-label="Terminal transcript">
-        {lines.map((line) =>
+        {lines.map((line, index) =>
           line.text ? (
-            <p key={line.id} className={toneClass(line.tone)} data-layout={line.layout ?? "plain"}>
+            <p
+              key={line.id}
+              className={toneClass(line.tone)}
+              data-layout={line.layout ?? "plain"}
+              style={{
+                "--line-order": Math.max(0, index - Math.max(0, lines.length - 10))
+              } as CSSProperties}
+            >
               <span>{line.text}</span>
               {line.detail ? <span>{line.detail}</span> : null}
             </p>

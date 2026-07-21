@@ -170,8 +170,12 @@ export function followVirtualEntry(state: QuietInterfaceState, candidate: Virtua
 export function directoryEntries(state: QuietInterfaceState, rawPath = state.cwd, includeHidden = false) {
   const directoryPath = resolveVirtualPath(state.cwd, rawPath);
   return virtualEntries(state)
-    .filter((candidate) => candidate.path !== directoryPath && parentPath(candidate.path) === directoryPath)
-    .filter((candidate) => includeHidden || !candidate.hidden)
+    .filter(
+      (candidate) =>
+        candidate.path !== directoryPath &&
+        parentPath(candidate.path) === directoryPath &&
+        (includeHidden || !candidate.hidden)
+    )
     .sort((first, second) => {
       if (first.kind === "directory" && second.kind !== "directory") return -1;
       if (first.kind !== "directory" && second.kind === "directory") return 1;

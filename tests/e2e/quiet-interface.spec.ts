@@ -12,6 +12,10 @@ function commandInput(page: Page) {
   return app(page).getByLabel("Terminal command");
 }
 
+function interfaceSurface(page: Page) {
+  return app(page).locator(".quiet-interface");
+}
+
 function outputText(page: Page) {
   return app(page).locator(".quiet-terminal-output");
 }
@@ -192,9 +196,14 @@ test("removed public content routes are no longer exported", async ({ page }) =>
 });
 
 test("reduced motion preserves every puzzle clue and state transition", async ({ page, isMobile }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();
   await waitForTerminalReady(page);
+
+  const canvas = page.locator("canvas.quiet-canvas");
+  await expect(canvas).toHaveAttribute("data-motion", "full");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(canvas).toHaveAttribute("data-motion", "reduced");
 
   for (const command of ["systemctl start interface", "cat carrier", "cat trace"]) {
     await runCommand(page, command);
@@ -202,8 +211,20 @@ test("reduced motion preserves every puzzle clue and state transition", async ({
 
   await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
   await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
+
+  for (const command of [
+    "echo lumen > signal",
+    "make signal",
+    "cd boundary",
+    "cd inside",
+    "./release"
+  ]) {
+    await runCommand(page, command);
+  }
+
+  await expect(outputText(page)).toContainText("the operator was not inside the machine");
+  await expect(phaseLabel(page)).toHaveText("outside");
   await expect(commandInput(page)).toBeFocused();
-  const canvas = page.locator("canvas.quiet-canvas");
   await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
   await expectNoHorizontalOverflow(page);
 });
@@ -220,7 +241,10 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
 
   await input.press("?");
   const palette = page.locator(".quiet-palette");
+  const paletteList = palette.getByRole("listbox");
   await expect(palette).toBeVisible();
+  await expect(paletteList).toBeFocused();
+  await expect(paletteList).toHaveAttribute("aria-activedescendant", "quiet-palette-option-0");
   await expect(palette.getByText("show available commands")).toBeVisible();
   await palette.press("l");
   await expect(palette).toBeHidden();
@@ -228,13 +252,16 @@ test("autocomplete, palette, history, clear, and invalid input work", async ({ p
   await expect(input).toBeFocused();
 
   await input.press("?");
+  await expect(paletteList).toBeFocused();
   await palette.press("ArrowDown");
+  await expect(paletteList).toHaveAttribute("aria-activedescendant", "quiet-palette-option-1");
   await palette.press("Enter");
   await expect(outputText(page)).toContainText("MAN help");
 
   await runCommand(page, "florb --quiet");
   await expect(outputText(page)).toContainText("florb: command not found");
   await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(input).not.toHaveAttribute("aria-invalid", "true", { timeout: 2_000 });
   await input.press("ArrowUp");
   await expect(input).toHaveValue("florb --quiet");
   await input.press("ArrowDown");
@@ -304,6 +331,8 @@ test("signal puzzle gates assembly and records useful failures", async ({ page }
 
   await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
   await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-carrier", "sampled");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-trace", "resolved");
 
   await runCommand(page, "make signal");
   await expect(outputText(page)).toContainText("make: *** [signal] unresolved. Stop.");
@@ -322,12 +351,15 @@ test("signal puzzle gates assembly and records useful failures", async ({ page }
   await expect(outputText(page)).toContainText("5 bytes written to signal");
   await runCommand(page, "cat signal");
   await expect(outputText(page)).toContainText("lumen");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-signal", "locked");
 
   await runCommand(page, "make signal");
   await expect(phaseLabel(page)).toHaveText("boundary");
   await expect(outputText(page)).toContainText("[3/3] mount boundary");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-boundary", "located");
   await runCommand(page, "cd boundary");
   await expect(outputText(page)).toContainText("inside/ is now readable");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-boundary", "open");
   await runCommand(page, "cd inside");
   await expect(promptText(page)).toHaveText("operator:/surface/boundary/inside$");
   await runCommand(page, "cd ..");
@@ -424,6 +456,7 @@ test("mobile key strip keeps history and submission reachable", async ({ page, i
   await expectNoHorizontalOverflow(page);
   const keyStrip = page.locator(".quiet-terminal-keys");
   await expect(keyStrip).toBeVisible();
+  await expect(page.locator(".quiet-mobile-instrument")).toBeVisible();
   await expect(keyStrip.getByRole("button", { name: "Complete command" })).toBeVisible();
   const terminalCompositing = await app(page).locator(".quiet-terminal").evaluate((element) => {
     const style = getComputedStyle(element);
@@ -431,7 +464,7 @@ test("mobile key strip keeps history and submission reachable", async ({ page, i
       backgroundColor: style.backgroundColor
     };
   });
-  expect(terminalCompositing.backgroundColor).toBe("rgb(3, 8, 6)");
+  expect(terminalCompositing.backgroundColor).toBe("rgb(2, 7, 5)");
   await expect(page.locator("canvas.quiet-canvas")).toBeHidden();
 
   for (const command of [
@@ -445,6 +478,7 @@ test("mobile key strip keeps history and submission reachable", async ({ page, i
   }
   await expect(outputText(page)).toContainText("sample: 1:N  2:M  3:L  4:E  5:U");
   await expect(outputText(page)).toContainText("route: 3 -> 5 -> 2 -> 4 -> 1");
+  await expect(interfaceSurface(page)).toHaveAttribute("data-signal", "locked");
   const canvas = page.locator("canvas.quiet-canvas");
   await (isMobile ? expect(canvas).toBeHidden() : expect(canvas).toBeVisible());
   await expectNoHorizontalOverflow(page);

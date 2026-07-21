@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">System Interface</title>
   <desc id="desc">A sparse signal apparatus on a black system surface.</desc>
-  <rect width="1200" height="630" fill="#030806"/>
+  <rect width="1200" height="630" fill="#020705"/>
   <g opacity="0.2" stroke="#153027" stroke-width="1">
     <path d="M80 90h1040M80 162h1040M80 234h1040M80 306h1040M80 378h1040M80 450h1040M80 522h1040"/>
     <path d="M152 54v522M248 54v522M344 54v522M440 54v522M536 54v522M632 54v522M728 54v522M824 54v522M920 54v522M1016 54v522"/>

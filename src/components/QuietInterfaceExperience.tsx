@@ -51,7 +51,7 @@ export function QuietInterfaceExperience() {
   const [visibleHintKey, setVisibleHintKey] = useState<string | null>(null);
   const [inputActive, setInputActive] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
-  const [terminalSignal, setTerminalSignal] = useState<TerminalSignal>(() => INITIAL_TERMINAL_SIGNAL);
+  const terminalSignalRef = useRef<TerminalSignal>(INITIAL_TERMINAL_SIGNAL);
   const [visualEventNonce, setVisualEventNonce] = useState(0);
   const [terminalAnchor, setTerminalAnchor] = useState<TerminalAnchor>({ x: 0, y: 0 });
   const ignoredPointerRef = useRef(false);
@@ -86,11 +86,23 @@ export function QuietInterfaceExperience() {
 
   const emitTerminalSignal = useCallback((signal: Omit<TerminalSignal, "nonce">) => {
     signalCounterRef.current += 1;
-    setTerminalSignal({
+    terminalSignalRef.current = {
       ...signal,
       nonce: signalCounterRef.current
-    });
+    };
   }, []);
+
+  useEffect(() => {
+    if (commandStatus === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setCommandStatus("idle");
+    }, commandStatus === "error" ? 1_100 : 760);
+
+    return () => window.clearTimeout(timeout);
+  }, [commandStatus]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -222,8 +234,13 @@ export function QuietInterfaceExperience() {
       }
 
       const spokenOutput = result.output
-        .filter((line) => line.text || line.detail)
-        .map((line) => [line.text, line.detail].filter(Boolean).join(": "))
+        .reduce<string[]>((spokenLines, line) => {
+          const spokenLine = [line.text, line.detail].filter(Boolean).join(": ");
+          if (spokenLine) {
+            spokenLines.push(spokenLine);
+          }
+          return spokenLines;
+        }, [])
         .join(". ");
       setAnnouncement(spokenOutput || `working directory ${nextState.cwd}`);
       setCommandStatus(result.error ? "error" : "ok");
@@ -272,6 +289,11 @@ export function QuietInterfaceExperience() {
   return (
     <main
       className="quiet-interface"
+      data-phase={state.phase}
+      data-carrier={state.hasListened ? "sampled" : "unknown"}
+      data-trace={state.hasTraced ? "resolved" : "unknown"}
+      data-signal={state.hasDecodedSignal ? "locked" : state.hasListened && state.hasTraced ? "writable" : "unavailable"}
+      data-boundary={state.boundaryOpen ? "open" : state.boundaryVisible ? "located" : "absent"}
       style={{ "--keyboard-inset": `${keyboardInset}px` } as QuietInterfaceStyle}
       onPointerDown={handlePointerDown}
     >
@@ -281,9 +303,16 @@ export function QuietInterfaceExperience() {
         puzzle={state}
         visualEvent={state.lastVisualEvent}
         visualEventNonce={visualEventNonce}
-        terminalSignal={terminalSignal}
+        terminalSignalRef={terminalSignalRef}
         terminalAnchor={terminalAnchor}
       />
+      <div className="quiet-mobile-instrument" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
       <QuietTerminal
         phase={state.phase}
         prompt={prompt}

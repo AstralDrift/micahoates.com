@@ -94,11 +94,16 @@ const structuredData = {
   ]
 };
 
+const structuredDataJson = JSON.stringify(structuredData)
+  .replaceAll("&", "\\u0026")
+  .replaceAll("<", "\\u003c")
+  .replaceAll(">", "\\u003e");
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#030806",
+  themeColor: "#020705",
   colorScheme: "dark"
 };
 
@@ -133,7 +138,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData)
+            __html: structuredDataJson
           }}
         />
         <div className="site-shell">{children}</div>

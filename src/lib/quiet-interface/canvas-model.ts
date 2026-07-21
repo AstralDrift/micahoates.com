@@ -122,71 +122,67 @@ const COMMAND_PREFIXES = [
   "look"
 ];
 
-export function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function phaseProfile(phase: InterfacePhase): PhaseProfile {
   switch (phase) {
     case "dormant":
       return {
-        intensity: 0.2,
-        cellAlpha: 0.34,
-        filamentAlpha: 0.2,
-        noiseAlpha: 0.26,
-        apertureScale: 0.82,
-        compression: 0.82,
+        intensity: 0.14,
+        cellAlpha: 0.3,
+        filamentAlpha: 0.13,
+        noiseAlpha: 0.16,
+        apertureScale: 0.76,
+        compression: 0.78,
         split: 0
       };
     case "observation":
       return {
-        intensity: 0.38,
-        cellAlpha: 0.48,
-        filamentAlpha: 0.34,
-        noiseAlpha: 0.38,
-        apertureScale: 0.94,
+        intensity: 0.36,
+        cellAlpha: 0.52,
+        filamentAlpha: 0.3,
+        noiseAlpha: 0.28,
+        apertureScale: 0.92,
         compression: 0.9,
         split: 0
       };
     case "assembly":
       return {
-        intensity: 0.58,
-        cellAlpha: 0.58,
-        filamentAlpha: 0.48,
-        noiseAlpha: 0.34,
+        intensity: 0.6,
+        cellAlpha: 0.64,
+        filamentAlpha: 0.5,
+        noiseAlpha: 0.24,
         apertureScale: 1,
         compression: 0.94,
         split: 0.06
       };
     case "boundary":
       return {
-        intensity: 0.74,
-        cellAlpha: 0.7,
+        intensity: 0.78,
+        cellAlpha: 0.76,
         filamentAlpha: 0.58,
-        noiseAlpha: 0.3,
+        noiseAlpha: 0.18,
         apertureScale: 1.04,
         compression: 1,
         split: 0.28
       };
     case "inside":
       return {
-        intensity: 0.48,
-        cellAlpha: 0.42,
-        filamentAlpha: 0.32,
-        noiseAlpha: 0.16,
-        apertureScale: 0.78,
-        compression: 0.72,
-        split: 0.48
+        intensity: 0.42,
+        cellAlpha: 0.4,
+        filamentAlpha: 0.24,
+        noiseAlpha: 0.09,
+        apertureScale: 0.74,
+        compression: 0.68,
+        split: 0.56
       };
     case "outside":
       return {
-        intensity: 0.32,
-        cellAlpha: 0.26,
-        filamentAlpha: 0.18,
-        noiseAlpha: 0.1,
-        apertureScale: 0.58,
-        compression: 0.58,
-        split: 0.72
+        intensity: 0.22,
+        cellAlpha: 0.18,
+        filamentAlpha: 0.1,
+        noiseAlpha: 0.04,
+        apertureScale: 0.48,
+        compression: 0.52,
+        split: 0.8
       };
     default:
       return phaseProfile("dormant");
@@ -199,7 +195,7 @@ export function paletteForPhase(phase: InterfacePhase) {
       primary: "rgba(230, 238, 233, 0.9)",
       secondary: "rgba(142, 185, 196, 0.66)",
       low: "rgba(230, 238, 233, 0.12)",
-      fill: "rgba(3, 8, 6, 0.42)",
+      fill: "rgba(2, 7, 5, 0.42)",
       warning: "rgba(207, 133, 133, 0.62)"
     };
   }
@@ -208,7 +204,7 @@ export function paletteForPhase(phase: InterfacePhase) {
     primary: "rgba(118, 239, 182, 0.88)",
     secondary: "rgba(142, 185, 196, 0.72)",
     low: "rgba(118, 239, 182, 0.13)",
-    fill: "rgba(3, 8, 6, 0.34)",
+    fill: "rgba(2, 7, 5, 0.34)",
     warning: "rgba(207, 133, 133, 0.62)"
   };
 }
@@ -259,12 +255,12 @@ export function apparatusGeometry(width: number, height: number, phase: Interfac
   const profile = phaseProfile(phase);
   const intensity = Math.min(1, profile.intensity + signalLevel / 220);
   return {
-    centerX: width * (width < 720 ? 0.58 : 0.7),
-    centerY: phase === "outside" ? height * 0.38 : height * 0.42,
-    base: Math.min(width, height) * (0.165 + intensity * 0.04) * profile.apertureScale,
-    cellSize: width < 720 ? 3 : 4,
-    columns: width < 720 ? 34 : 50,
-    rows: width < 720 ? 19 : 29
+    centerX: width * (width < 1200 ? 0.8 : 0.745),
+    centerY: phase === "outside" ? height * 0.43 : height * 0.45,
+    base: Math.min(width, height) * (0.19 + intensity * 0.025) * profile.apertureScale,
+    cellSize: width < 980 ? 3.4 : 4,
+    columns: width < 980 ? 35 : 39,
+    rows: width < 980 ? 39 : 43
   };
 }
 
@@ -309,8 +305,8 @@ export function createVisualField({
 }) {
   const random = createSeededRandom(8271979 + Math.floor(width * 17) + Math.floor(height * 31));
   const area = width * height;
-  const particleCount = reducedMotion ? 22 : Math.min(72, Math.max(38, Math.floor(area / 21000)));
-  const nodeCount = reducedMotion ? 14 : Math.min(26, Math.max(18, Math.floor(area / 47000)));
+  const particleCount = reducedMotion ? 16 : Math.min(48, Math.max(26, Math.floor(area / 30000)));
+  const nodeCount = reducedMotion ? 12 : Math.min(22, Math.max(16, Math.floor(area / 62000)));
   const geometry = apparatusGeometry(width, height, "assembly", 52);
   const origin = terminalOrigin(width, height);
 
@@ -319,12 +315,14 @@ export function createVisualField({
     for (let column = 0; column < geometry.columns; column += 1) {
       const nx = (column - (geometry.columns - 1) / 2) / ((geometry.columns - 1) / 2);
       const ny = (row - (geometry.rows - 1) / 2) / ((geometry.rows - 1) / 2);
-      const outer = Math.pow(Math.abs(nx) / 0.94, 4) + Math.pow(Math.abs(ny) / 0.82, 4);
-      const inner = Math.pow(Math.abs(nx) / 0.66, 4) + Math.pow(Math.abs(ny) / 0.52, 4);
-      const shell = outer <= 1.05 && inner >= 0.94;
-      const corridor = Math.abs(ny) < 0.055 && Math.abs(nx) < 0.66;
-      const boundary = Math.abs(nx) < 0.055 && Math.abs(ny) < 0.54;
-      const core = Math.abs(nx) < 0.08 && Math.abs(ny) < 0.1;
+      const absoluteX = Math.abs(nx);
+      const absoluteY = Math.abs(ny);
+      const outer = absoluteX <= 0.88 && absoluteY <= 0.96 && absoluteX + absoluteY <= 1.48;
+      const inner = absoluteX < 0.62 && absoluteY < 0.72 && absoluteX + absoluteY < 1.08;
+      const shell = outer && !inner;
+      const corridor = absoluteY < 0.045 && absoluteX < 0.64;
+      const boundary = absoluteX < 0.045 && absoluteY < 0.72;
+      const core = absoluteX + absoluteY < 0.14;
 
       if (shell || corridor || boundary || core) {
         cells.push({
@@ -343,18 +341,18 @@ export function createVisualField({
   }
 
   const particles: Particle[] = Array.from({ length: particleCount }, () => {
-    const nearAperture = random() > 0.14;
-    const signalBand = random() > 0.6;
+    const nearAperture = random() > 0.2;
+    const signalBand = random() > 0.48;
     const homeX = signalBand
       ? origin.x + (geometry.centerX - origin.x) * random()
       : nearAperture
-        ? geometry.centerX + (random() - 0.5) * geometry.base * 3.2
-        : geometry.centerX + (random() - 0.5) * geometry.base * 4.2;
+        ? geometry.centerX + (random() - 0.5) * geometry.base * 2.7
+        : geometry.centerX + (random() - 0.5) * geometry.base * 3.6;
     const homeY = signalBand
       ? origin.y + (geometry.centerY - origin.y) * random() + (random() - 0.5) * 48
       : nearAperture
-        ? geometry.centerY + (random() - 0.5) * geometry.base * 1.8
-        : geometry.centerY + (random() - 0.5) * geometry.base * 2.4;
+        ? geometry.centerY + (random() - 0.5) * geometry.base * 2.4
+        : geometry.centerY + (random() - 0.5) * geometry.base * 3;
 
     return {
       x: homeX,
@@ -364,22 +362,24 @@ export function createVisualField({
       homeX,
       homeY,
       char: GLYPHS[Math.floor(random() * GLYPHS.length)],
-      size: 7 + random() * 4,
-      alpha: 0.035 + random() * 0.12,
+      size: 6 + random() * 3,
+      alpha: 0.024 + random() * 0.09,
       phase: random() * Math.PI * 2
     };
   });
 
   const nodes: NodePoint[] = Array.from({ length: nodeCount }, (_, index) => {
-    const amount = index / Math.max(1, nodeCount - 1);
+    const pathNodeCount = Math.min(7, nodeCount);
+    const onSignalPath = index < pathNodeCount;
+    const amount = onSignalPath ? index / Math.max(1, pathNodeCount - 1) : (index - pathNodeCount) / Math.max(1, nodeCount - pathNodeCount);
     const curve = Math.sin(amount * Math.PI);
-    const apertureBias = index % 3 !== 1;
-    const homeX = apertureBias
-      ? geometry.centerX + (random() - 0.5) * geometry.base * 2.4
-      : origin.x + (geometry.centerX - origin.x) * amount + (random() - 0.5) * 54 * curve;
-    const homeY = apertureBias
-      ? geometry.centerY + (random() - 0.5) * geometry.base * 1.4
-      : origin.y + (geometry.centerY - origin.y) * amount - curve * 74 + (random() - 0.5) * 34;
+    const orbit = amount * Math.PI * 2 + random() * 0.18;
+    const homeX = onSignalPath
+      ? origin.x + (geometry.centerX - geometry.base * 0.7 - origin.x) * amount + (random() - 0.5) * 22 * curve
+      : geometry.centerX + Math.cos(orbit) * geometry.base * (0.86 + random() * 0.34);
+    const homeY = onSignalPath
+      ? origin.y + (geometry.centerY - origin.y) * amount - curve * 52 + (random() - 0.5) * 16
+      : geometry.centerY + Math.sin(orbit) * geometry.base * (1.02 + random() * 0.26);
 
     return {
       x: homeX,
@@ -393,14 +393,16 @@ export function createVisualField({
 
   const filaments: Filament[] = [];
   nodes.forEach((node, index) => {
-    const nearest = nodes
-      .map((candidate, candidateIndex) => ({
-        candidateIndex,
-        distance: Math.hypot(candidate.homeX - node.homeX, candidate.homeY - node.homeY)
-      }))
-      .filter((candidate) => candidate.candidateIndex !== index)
-      .sort((first, second) => first.distance - second.distance)
-      .slice(0, 2);
+    const distances: Array<{ candidateIndex: number; distance: number }> = [];
+    nodes.forEach((candidate, candidateIndex) => {
+      if (candidateIndex !== index) {
+        distances.push({
+          candidateIndex,
+          distance: Math.hypot(candidate.homeX - node.homeX, candidate.homeY - node.homeY)
+        });
+      }
+    });
+    const nearest = distances.sort((first, second) => first.distance - second.distance).slice(0, 2);
 
     nearest.forEach((candidate) => {
       if (candidate.candidateIndex > index || random() > 0.68) {

@@ -15,6 +15,7 @@ type CommandPaletteProps = {
 export function CommandPalette({ open, commands, onClose, onRun }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const shortcutMap = useMemo(() => {
@@ -41,7 +42,7 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
     }
 
     const timeout = window.setTimeout(() => {
-      dialogRef.current?.focus();
+      listRef.current?.focus();
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [open]);
@@ -109,9 +110,12 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
         return;
       }
 
-      const matchingIndexes = commands
-        .map((definition, index) => ({ command: definition.command, index }))
-        .filter(({ command }) => command.startsWith(key));
+      const matchingIndexes: Array<{ command: string; index: number }> = [];
+      commands.forEach((definition, index) => {
+        if (definition.command.startsWith(key)) {
+          matchingIndexes.push({ command: definition.command, index });
+        }
+      });
       if (matchingIndexes.length > 0) {
         const nextMatch = matchingIndexes.find(({ index }) => index > safeSelectedIndex) ?? matchingIndexes[0];
         setSelectedIndex(nextMatch.index);
@@ -137,14 +141,24 @@ export function CommandPalette({ open, commands, onClose, onRun }: CommandPalett
             esc
           </button>
         </div>
-        <div className="quiet-palette-list" aria-label="Discovered commands">
+        <div
+          ref={listRef}
+          className="quiet-palette-list"
+          role="listbox"
+          aria-label="Discovered commands"
+          aria-activedescendant={selectedCommand ? `quiet-palette-option-${safeSelectedIndex}` : undefined}
+          tabIndex={-1}
+        >
           {commands.map((definition, index) => (
             <button
               key={definition.command}
+              id={`quiet-palette-option-${index}`}
               ref={(node) => {
                 itemRefs.current[index] = node;
               }}
               type="button"
+              role="option"
+              aria-selected={index === safeSelectedIndex}
               data-selected={index === safeSelectedIndex}
               onPointerMove={() => setSelectedIndex(index)}
               onClick={() => run(definition.command)}
