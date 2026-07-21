@@ -104,6 +104,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
   await expect(app(page).locator(".brand-name")).toHaveText("Micah Oates");
+  await expect(app(page).locator(".home-experience")).toHaveAttribute("data-ready", "true");
 });
 
 test.afterEach(async ({ page }) => {
