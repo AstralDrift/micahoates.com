@@ -86,15 +86,17 @@ export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
   exit: [{ text: "no enclosing shell detected", tone: "muted" }]
 };
 
-const CONTACT_LOCAL_PART = "aGVsbG8=";
-const CONTACT_DOMAIN_PART = "bWljYWhvYXRlcy5jb20=";
+const CONTACT_LOCAL_PART = "bWljYWg=";
+const CONTACT_DOMAIN_PART = "bmV4dXNuZXVyYWwubmV0";
 
 function decodeContactSegment(value: string) {
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
 
-  return value === CONTACT_LOCAL_PART ? ["hel", "lo"].join("") : ["mic", "aho", "ates", ".", "com"].join("");
+  return value === CONTACT_LOCAL_PART
+    ? ["mi", "cah"].join("")
+    : ["nex", "us", "neural", ".", "net"].join("");
 }
 
 function contactAddress() {

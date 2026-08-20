@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import sharp from "sharp";
 
-const CONTACT_ALIAS = "hello [at] micahoates [dot] com";
+const CONTACT_ALIAS = "micah [at] nexusneural [dot] net";
 const runtimeErrors = new WeakMap<Page, string[]>();
 
 function app(page: Page) {
