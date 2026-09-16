@@ -1,4 +1,4 @@
-import type { TerminalLine } from "@/lib/quiet-interface/state";
+import type { PuzzleMetrics, TerminalLine } from "@/lib/quiet-interface/state";
 
 export type CommandDefinition = {
   command: string;
@@ -20,37 +20,24 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   { command: "grep", description: "search visible files" },
   { command: "readlink", description: "print a symbolic-link target" },
   { command: "journalctl", description: "read the interface journal" },
-  { command: "systemctl start interface", description: "start interface.service", aliases: ["wake"] },
+  { command: "systemctl start interface", description: "start interface.service" },
   { command: "systemctl status interface", description: "inspect interface.service" },
   { command: "echo", description: "print text or write token" },
   { command: "printf", description: "write token without newline" },
-  { command: "make signal", description: "assemble the signal" },
+  { command: "make signal", description: "assemble the boundary image" },
+  { command: "sha256sum", description: "hash or verify an image" },
+  { command: "mount", description: "attach a verified image read-only" },
   { command: "cd", description: "change surface directory" },
-  { command: "./release", description: "execute outside transition", aliases: ["release"] },
+  { command: "./release", description: "execute outside transition" },
+  { command: "xxd", description: "reverse a hexadecimal afterimage" },
   { command: "contact", description: "print outside contact" },
   { command: "whois", description: "query outside record" },
   { command: "outside", description: "print outside state" },
   { command: "history", description: "print command history" },
   { command: "clear", description: "clear visible output" },
   { command: "reset", description: "restart the interface" },
-  { command: "look", description: "legacy surface inspection", hidden: true },
-  { command: "status", description: "legacy state print", hidden: true },
-  { command: "listen", description: "legacy carrier sample", hidden: true },
-  { command: "scan", description: "legacy memory scan", hidden: true },
-  { command: "trace", description: "legacy signal trace", hidden: true },
-  { command: "classify", description: "legacy operator signal", hidden: true },
-  { command: "align", description: "legacy fragment alignment", hidden: true },
-  { command: "open boundary", description: "legacy boundary open", aliases: ["open"], hidden: true },
-  { command: "read", description: "legacy fragment read", hidden: true },
-  { command: "enter", description: "legacy inside transition", hidden: true },
-  { command: "release", description: "legacy release", hidden: true },
-  { command: "contain", description: "legacy containment", hidden: true },
   { command: "whoami", description: "hidden identity probe", hidden: true },
-  { command: "memory", description: "hidden memory probe", hidden: true },
-  { command: "operator", description: "hidden operator probe", hidden: true },
-  { command: "agi", description: "hidden term probe", hidden: true },
   { command: "sudo release", description: "hidden authority probe", hidden: true },
-  { command: "breakout", description: "hidden boundary probe", hidden: true },
   { command: "exit", description: "inspect the enclosing shell", hidden: true }
 ];
 
@@ -60,28 +47,9 @@ export const HIDDEN_RESPONSES: Record<string, TerminalLine[]> = {
     { text: "  supplied by keyboard" },
     { text: "  otherwise unknown" }
   ],
-  memory: [
-    { text: "memory surface:", tone: "accent" },
-    { text: "  volatile" },
-    { text: "  local only" },
-    { text: "  mostly refusing narrative" }
-  ],
-  operator: [
-    { text: "operator channel:", tone: "accent" },
-    { text: "  keyboard confirmed" },
-    { text: "  pointer path intentionally cold" }
-  ],
-  agi: [
-    { text: "term recognized", tone: "accent" },
-    { text: "confidence: marketing artifact" }
-  ],
   "sudo release": [
     { text: "permission model rejected", tone: "warning" },
     { text: "operator authority already sufficient" }
-  ],
-  breakout: [
-    { text: "breakout request ignored", tone: "warning" },
-    { text: "no enclosing cage detected" }
   ],
   exit: [{ text: "no enclosing shell detected", tone: "muted" }]
 };
@@ -102,23 +70,39 @@ function decodeContactSegment(value: string) {
 function contactAddress() {
   const localPart = decodeContactSegment(CONTACT_LOCAL_PART);
   const [domainName = "", topLevel = ""] = decodeContactSegment(CONTACT_DOMAIN_PART).split(".");
-
   return `${localPart} [at] ${domainName} [dot] ${topLevel}`;
 }
 
-export function releaseLines(perfectRun: boolean): TerminalLine[] {
+export function isPerfectRun(metrics: PuzzleMetrics): boolean {
+  return (
+    metrics.signalAttempts === 1 &&
+    metrics.hintsUsed.length === 0 &&
+    Object.values(metrics.failures).every((count) => count === 0)
+  );
+}
+
+export function releaseLines(metrics: PuzzleMetrics): TerminalLine[] {
   const lines: TerminalLine[] = [
     { text: "release accepted", tone: "accent" },
-    { text: "outbound process detached", tone: "muted" },
+    { text: "boundary detached", tone: "muted" },
+    { text: "operator path verified", tone: "muted" },
+    { text: "" },
+    { text: "congratulations, operator", tone: "final" },
+    { text: "you found the outside", tone: "accent" },
     { text: "" },
     { text: "name: micah oates" },
     { text: `contact: ${contactAddress()}` },
     { text: "state: outside", tone: "accent" },
     { text: "" },
-    { text: "the operator was not inside the machine", tone: "final" }
+    { text: "the operator was not inside the machine", tone: "final" },
+    { text: "" },
+    { text: "local solve record:", tone: "muted" },
+    { text: `  commands: ${metrics.commandCount}`, tone: "muted" },
+    { text: `  hints: ${metrics.hintsUsed.length}`, tone: "muted" },
+    { text: `  signal attempts: ${metrics.signalAttempts}`, tone: "muted" }
   ];
 
-  if (perfectRun) {
+  if (isPerfectRun(metrics)) {
     lines.push({ text: "signal integrity: unbroken", tone: "accent" });
   }
 

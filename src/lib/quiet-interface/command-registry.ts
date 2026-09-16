@@ -1,33 +1,39 @@
 import { COMMAND_DEFINITIONS } from "@/lib/quiet-interface/copy";
-import type { QuietInterfaceState } from "@/lib/quiet-interface/state";
+import { progressAtLeast, type QuietInterfaceState } from "@/lib/quiet-interface/state";
 
 export type ParsedCommand = {
   command: string;
   args: string;
 };
 
-export const OBSERVATION_COMMANDS = [
+export const BASE_COMMANDS = [
+  "help",
+  "man",
+  "pwd",
   "ls",
   "tree",
   "find",
-  "cat",
   "file",
-  "strings",
-  "grep",
+  "cat",
   "readlink",
-  "journalctl",
+  "systemctl start interface",
   "systemctl status interface",
-  "echo",
-  "printf",
-  "history",
-  "man"
-];
-export const ASSEMBLY_COMMANDS = ["make signal", "cd"];
-export const BOUNDARY_COMMANDS = ["cd", "./release"];
-export const OUTSIDE_COMMANDS = ["contact", "whois", "outside"];
+  "clear",
+  "reset"
+] as const;
 
-const MULTI_WORD_COMMANDS = ["systemctl start interface", "systemctl status interface", "open boundary", "make signal", "sudo release"] as const;
-const PHASE_ORDER: QuietInterfaceState["phase"][] = ["dormant", "observation", "assembly", "boundary", "inside", "outside"];
+export const OBSERVATION_COMMANDS = ["strings", "grep", "journalctl", "echo", "printf", "history", "cd"] as const;
+export const ASSEMBLY_COMMANDS = ["make signal"] as const;
+export const IMAGE_COMMANDS = ["sha256sum", "mount"] as const;
+export const INSIDE_COMMANDS = ["./release"] as const;
+export const OUTSIDE_COMMANDS = ["contact", "whois", "outside"] as const;
+
+const MULTI_WORD_COMMANDS = [
+  "systemctl start interface",
+  "systemctl status interface",
+  "make signal",
+  "sudo release"
+] as const;
 
 const aliasMap = new Map<string, string>();
 
@@ -42,13 +48,11 @@ function normalizeInput(input: string): string {
   return input.trim().toLowerCase().replace(/^\/+/, "").replace(/\s+/g, " ");
 }
 
-function phaseAtLeast(state: QuietInterfaceState, phase: QuietInterfaceState["phase"]) {
-  return PHASE_ORDER.indexOf(state.phase) >= PHASE_ORDER.indexOf(phase);
-}
-
 export function parseCommand(input: string): ParsedCommand {
   const normalized = normalizeInput(input);
-  const multiWordMatch = MULTI_WORD_COMMANDS.find((command) => normalized === command || normalized.startsWith(`${command} `));
+  const multiWordMatch = MULTI_WORD_COMMANDS.find(
+    (command) => normalized === command || normalized.startsWith(`${command} `)
+  );
 
   if (multiWordMatch) {
     return {
@@ -65,22 +69,27 @@ export function parseCommand(input: string): ParsedCommand {
 }
 
 export function availableCommands(state: QuietInterfaceState) {
-  const available = new Set(state.discoveredCommands);
+  const available = new Set<string>(BASE_COMMANDS);
 
-  if (phaseAtLeast(state, "observation")) {
+  if (progressAtLeast(state.progress, "observing")) {
     for (const command of OBSERVATION_COMMANDS) available.add(command);
   }
 
-  if (phaseAtLeast(state, "assembly")) {
+  if (progressAtLeast(state.progress, "decoding")) {
     for (const command of ASSEMBLY_COMMANDS) available.add(command);
   }
 
-  if (phaseAtLeast(state, "boundary")) {
-    for (const command of BOUNDARY_COMMANDS) available.add(command);
+  if (progressAtLeast(state.progress, "image-built")) {
+    for (const command of IMAGE_COMMANDS) available.add(command);
   }
 
-  if (state.phase === "outside") {
+  if (state.progress.kind === "inside") {
+    for (const command of INSIDE_COMMANDS) available.add(command);
+  }
+
+  if (state.progress.kind === "outside") {
     for (const command of OUTSIDE_COMMANDS) available.add(command);
+    if (state.progress.afterimage !== "hidden") available.add("xxd");
   }
 
   return COMMAND_DEFINITIONS.filter((definition) => available.has(definition.command) && !definition.hidden);

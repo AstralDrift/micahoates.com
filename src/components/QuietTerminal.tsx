@@ -20,15 +20,22 @@ export type TerminalAnchor = {
 
 export type CommandStatus = "idle" | "ok" | "error";
 
+type QuietTerminalLineStyle = CSSProperties & {
+  "--line-order": number;
+};
+
 type QuietTerminalProps = {
   phase: InterfacePhase;
   prompt: string;
+  fullPrompt: string;
   hint?: string;
   announcement: string;
   commandStatus: CommandStatus;
   lines: RenderedTerminalLine[];
   suggestions: string[];
   pathSuggestions: string[];
+  busy: boolean;
+  onSettle: () => void;
   onCommand: (command: string) => void;
   onInputActivity: (active: boolean) => void;
   onTerminalSignal: (signal: Pick<TerminalSignal, "event" | "input" | "submittedCommand">) => void;
@@ -72,7 +79,7 @@ function completeLastToken(input: string, candidates: string[]) {
 function shouldCompletePath(input: string) {
   const normalized = input.trimStart().toLowerCase();
   return (
-    /^(cat|less|more|file|strings|readlink|cd|ls|tree|find)\s+/.test(normalized) ||
+    /^(cat|less|more|file|strings|readlink|cd|ls|tree|find|sha256sum|mount|xxd)\s+/.test(normalized) ||
     /^grep\s+\S+\s+/.test(normalized) ||
     />\s*\S*$/.test(normalized)
   );
@@ -81,12 +88,15 @@ function shouldCompletePath(input: string) {
 export function QuietTerminal({
   phase,
   prompt,
+  fullPrompt,
   hint,
   announcement,
   commandStatus,
   lines,
   suggestions,
   pathSuggestions,
+  busy,
+  onSettle,
   onCommand,
   onInputActivity,
   onTerminalSignal,
@@ -156,6 +166,9 @@ export function QuietTerminal({
   }, [lines]);
 
   const submit = () => {
+    if (busy) {
+      return;
+    }
     const command = input.trim();
     if (!command) {
       return;
@@ -177,6 +190,9 @@ export function QuietTerminal({
   };
 
   const autocomplete = () => {
+    if (busy) {
+      return;
+    }
     const nextInput = input.trim().toLowerCase().replace(/^\/+/, "");
     if (!nextInput) {
       return;
@@ -197,6 +213,9 @@ export function QuietTerminal({
   };
 
   const recallPrevious = useCallback(() => {
+    if (busy) {
+      return;
+    }
     const history = historyRef.current;
     if (history.length === 0) {
       return;
@@ -205,9 +224,12 @@ export function QuietTerminal({
     const nextIndex = historyIndex === null ? history.length - 1 : Math.max(0, historyIndex - 1);
     historyIndexRef.current = nextIndex;
     updateInput(history[nextIndex], "history");
-  }, [updateInput]);
+  }, [busy, updateInput]);
 
   const recallNext = useCallback(() => {
+    if (busy) {
+      return;
+    }
     const history = historyRef.current;
     const historyIndex = historyIndexRef.current;
     if (history.length === 0 || historyIndex === null) {
@@ -221,9 +243,15 @@ export function QuietTerminal({
     }
     historyIndexRef.current = nextIndex;
     updateInput(history[nextIndex], "history");
-  }, [updateInput]);
+  }, [busy, updateInput]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if ((event.key === "Escape" || event.key === "Esc") && busy) {
+      event.preventDefault();
+      onSettle();
+      return;
+    }
+
     if (event.ctrlKey && event.key.toLowerCase() === "l") {
       event.preventDefault();
       onTerminalSignal({ event: "clear", input, submittedCommand: "clear" });
@@ -284,7 +312,9 @@ export function QuietTerminal({
     <section
       className={`quiet-terminal quiet-terminal-${phase}`}
       data-command-status={commandStatus}
+      data-busy={busy ? "true" : "false"}
       aria-label="Quiet system interface"
+      aria-busy={busy}
       onPointerUp={focusInputFromSurface}
     >
       <div className="quiet-terminal-chrome">
@@ -294,23 +324,24 @@ export function QuietTerminal({
         <span>?</span>
       </div>
       <div ref={outputRef} className="quiet-terminal-output" role="region" aria-label="Terminal transcript">
-        {lines.map((line, index) =>
-          line.text ? (
+        {lines.map((line, index) => {
+          const lineStyle: QuietTerminalLineStyle = {
+            "--line-order": Math.max(0, index - Math.max(0, lines.length - 10))
+          };
+          return line.text ? (
             <p
               key={line.id}
               className={toneClass(line.tone)}
               data-layout={line.layout ?? "plain"}
-              style={{
-                "--line-order": Math.max(0, index - Math.max(0, lines.length - 10))
-              } as CSSProperties}
+              style={lineStyle}
             >
               <span>{line.text}</span>
               {line.detail ? <span>{line.detail}</span> : null}
             </p>
           ) : (
             <br key={line.id} />
-          )
-        )}
+          );
+        })}
       </div>
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announcement}
@@ -334,6 +365,9 @@ export function QuietTerminal({
           <span className="quiet-terminal-prompt" aria-hidden="true">
             {prompt}
           </span>
+          <span id="quiet-terminal-prompt-full" className="sr-only">
+            {fullPrompt}
+          </span>
           <input
             ref={inputRef}
             id="quiet-command-input"
@@ -345,27 +379,29 @@ export function QuietTerminal({
             onKeyDown={handleKeyDown}
             autoComplete="off"
             autoCapitalize="none"
-            aria-describedby="quiet-terminal-hint"
+            aria-describedby="quiet-terminal-prompt-full quiet-terminal-hint"
+            aria-disabled={busy ? true : undefined}
             aria-invalid={commandStatus === "error" ? true : undefined}
             enterKeyHint="send"
             spellCheck={false}
             placeholder="command"
+            readOnly={busy}
           />
         </form>
         <div className="quiet-terminal-keys" aria-label="Terminal keys">
-          <button type="button" aria-label="Complete command" onPointerDown={(event) => event.preventDefault()} onClick={autocomplete}>
+          <button type="button" disabled={busy} aria-label="Complete command" onPointerDown={(event) => event.preventDefault()} onClick={autocomplete}>
             Tab
           </button>
-          <button type="button" aria-label="Previous command" onPointerDown={(event) => event.preventDefault()} onClick={recallPrevious}>
+          <button type="button" disabled={busy} aria-label="Previous command" onPointerDown={(event) => event.preventDefault()} onClick={recallPrevious}>
             ↑
           </button>
-          <button type="button" aria-label="Next command" onPointerDown={(event) => event.preventDefault()} onClick={recallNext}>
+          <button type="button" disabled={busy} aria-label="Next command" onPointerDown={(event) => event.preventDefault()} onClick={recallNext}>
             ↓
           </button>
-          <button type="button" aria-label="Open command palette" onPointerDown={(event) => event.preventDefault()} onClick={onOpenPalette}>
+          <button type="button" disabled={busy} aria-label="Open command palette" onPointerDown={(event) => event.preventDefault()} onClick={onOpenPalette}>
             ?
           </button>
-          <button type="button" aria-label="Run command" onPointerDown={(event) => event.preventDefault()} onClick={submit}>
+          <button type="button" disabled={busy} aria-label="Run command" onPointerDown={(event) => event.preventDefault()} onClick={submit}>
             Enter
           </button>
         </div>
